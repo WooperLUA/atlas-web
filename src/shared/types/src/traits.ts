@@ -14,11 +14,15 @@ export type Traits<T extends keyof HTMLElementTagNameMap> = {
 } & {
 
     style?: Reactive<string>;
+    text?: Reactive<string>;
 
-    /** Click event listener. */
+    /* Event listener. */
     onClick?: (e: MouseEvent) => void;
-    /** Input event listener. */
     onInput?: (e: InputEvent) => void;
-    /** Change event listener. */
     onChange?: (e: Event) => void;
+
+    /* Lifecycle */
+    onMount?: (el: HTMLElementTagNameMap[T]) => void;
+    onUnmount?: (el: HTMLElementTagNameMap[T]) => void;
+    onUpdate?: (el: HTMLElementTagNameMap[T]) => void;
 };

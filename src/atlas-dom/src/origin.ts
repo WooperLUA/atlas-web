@@ -23,7 +23,14 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
                 if (key === 'style' && typeof freshValue === 'string') {
                     element.style.cssText = freshValue;
                 }
+                else if (key === 'text') {
+                    element.textContent = freshValue;
+                }
                 else (element as any)[key] = freshValue;
+
+                if ((element as any)._atlas_onUpdate) {
+                    (element as any)._atlas_onUpdate(element);
+                }
             };
 
             if ((window as any)._atlas_subscribe) {
@@ -37,6 +44,9 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
              if (key === 'style' && typeof value === 'string') {
                 element.style.cssText = value;
             }
+            else if (key === 'text') {
+                element.textContent = String(value);
+            }
             else {
                 try {
                     (element as any)[key] = value;
@@ -46,6 +56,10 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
             }
         }
     }
+
+    if (traits.onMount) (element as any)._atlas_onMount = traits.onMount;
+    if (traits.onUnmount) (element as any)._atlas_onUnmount = traits.onUnmount;
+    if (traits.onUpdate) (element as any)._atlas_onUpdate = traits.onUpdate;
 
     children.flat().forEach(child => {
         if (child instanceof Node) {
