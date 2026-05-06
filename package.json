@@ -1,0 +1,36 @@
+{
+  "name": "atlas",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/atlas.js",
+  "module": "./dist/atlas.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/atlas.js",
+      "types": "./dist/atlas.d.ts"
+    },
+    "./dom": {
+      "import": "./dist/atlas-dom.js",
+      "types": "./dist/atlas-dom.d.ts"
+    },
+    "./router": {
+      "import": "./dist/atlas-router.js",
+      "types": "./dist/atlas-router.d.ts"
+    },
+    "./types": {
+      "types": "./dist/atlas-types.d.ts"
+    }
+  },
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "vite": "^8.0.10",
+    "vite-plugin-dts": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
