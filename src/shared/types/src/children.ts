@@ -1,1 +1,1 @@
-export type Children = HTMLElement | string;
+export type Children = HTMLElement | DocumentFragment | Node | string | Children[];

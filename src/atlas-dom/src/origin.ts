@@ -47,11 +47,11 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
         }
     }
 
-    children.forEach(child => {
-        if (typeof child === 'string') {
-            element.appendChild(document.createTextNode(child));
-        } else if (child instanceof HTMLElement) {
+    children.flat().forEach(child => {
+        if (child instanceof Node) {
             element.appendChild(child);
+        } else if (typeof child === 'string' || typeof child === 'number') {
+            element.appendChild(document.createTextNode(String(child)));
         }
     });
 
