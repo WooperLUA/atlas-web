@@ -1,4 +1,5 @@
-export interface RouterInstance {
+export interface RouterInstance
+{
     init: () => void;
     navigateTo: (path: string) => void;
 }

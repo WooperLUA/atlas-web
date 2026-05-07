@@ -9,7 +9,8 @@ export function Structure(...children: Children[]): DocumentFragment
         if (typeof child === 'string')
         {
             fragment.appendChild(document.createTextNode(child));
-        } else if (child instanceof Node)
+        }
+        else if (child instanceof Node)
         {
             fragment.appendChild(child);
         }

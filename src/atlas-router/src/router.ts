@@ -1,4 +1,5 @@
 import type {Route, RouterOptions} from "@interfaces";
+import {logger} from "@services";
 
 /**
  * Manages client-side routing and view rendering.
@@ -21,6 +22,7 @@ export class Router
 
         if (!element)
         {
+            logger.error(`Root element #${config.rootId} not found.`);
             throw new Error(`[Atlas]: Root element #${config.rootId} not found.`);
         }
 
@@ -65,6 +67,7 @@ export class Router
     {
         if (window.location.pathname === path) return;
 
+        logger.debug(`Navigating to: ${path}`);
         window.history.pushState(null, "", path);
         this.render();
     }
@@ -76,6 +79,7 @@ export class Router
     public render(): void
     {
         const currentPath = window.location.pathname;
+        logger.debug(`Rendering path: ${currentPath}`);
         let params: Record<string, string> = {};
 
         const route = this.routes.find(r =>
@@ -123,7 +127,8 @@ export class Router
             else if (view instanceof Node) {
                 this.root.appendChild(view);
             }
-        } else
+        }
+        else
         {
             this.root.innerHTML = "404 - Not Found";
         }

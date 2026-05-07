@@ -1,4 +1,4 @@
-import type { Traits, Children } from "@types";
+import type {Traits, Children} from "@types";
 
 /**
  * Creates a new HTML element with the specified tag, traits, and children.
@@ -8,49 +8,63 @@ import type { Traits, Children } from "@types";
  * @param {...Children[]} children - Child elements or text strings to be appended.
  * @returns {HTMLElement} The constructed HTML element.
  */
-export function Origin(tag: string, traits: any = {}, ...children: Children[]): HTMLElement {
+export function Origin(tag: string, traits: any = {}, ...children: Children[]): HTMLElement
+{
     const element = document.createElement(tag);
 
-    for (const [key, value] of Object.entries(traits)) {
-        if (key.startsWith('on') && typeof value === 'function') {
+    for (const [key, value] of Object.entries(traits))
+    {
+        if (key.startsWith('on') && typeof value === 'function')
+        {
             const eventName = key.toLowerCase().substring(2);
             element.addEventListener(eventName, value as EventListener);
         }
-
-        else if (typeof value === 'function') {
-            const update = () => {
+        else if (typeof value === 'function')
+        {
+            const update = () =>
+            {
                 const freshValue = value();
-                if (key === 'style' && typeof freshValue === 'string') {
+                if (key === 'style' && typeof freshValue === 'string')
+                {
                     element.style.cssText = freshValue;
                 }
-                else if (key === 'text') {
+                else if (key === 'text')
+                {
                     element.textContent = freshValue;
                 }
                 else (element as any)[key] = freshValue;
 
-                if ((element as any)._atlas_onUpdate) {
+                if ((element as any)._atlas_onUpdate)
+                {
                     (element as any)._atlas_onUpdate(element);
                 }
             };
 
-            if ((window as any)._atlas_subscribe) {
+            if ((window as any)._atlas_subscribe)
+            {
                 (window as any)._atlas_subscribe(update);
             }
 
             update();
         }
-
-        else {
-             if (key === 'style' && typeof value === 'string') {
+        else
+        {
+            if (key === 'style' && typeof value === 'string')
+            {
                 element.style.cssText = value;
             }
-            else if (key === 'text') {
+            else if (key === 'text')
+            {
                 element.textContent = String(value);
             }
-            else {
-                try {
+            else
+            {
+                try
+                {
                     (element as any)[key] = value;
-                } catch {
+                }
+                catch
+                {
                     element.setAttribute(key, String(value));
                 }
             }
@@ -61,10 +75,13 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
     if (traits.onUnmount) (element as any)._atlas_onUnmount = traits.onUnmount;
     if (traits.onUpdate) (element as any)._atlas_onUpdate = traits.onUpdate;
 
-    children.flat().forEach(child => {
-        if (child instanceof Node) {
+    children.flat().forEach(child =>
+    {
+        if (child instanceof Node)
+        {
             element.appendChild(child);
-        } else if (typeof child === 'string' || typeof child === 'number') {
+        } else if (typeof child === 'string' || typeof child === 'number')
+        {
             element.appendChild(document.createTextNode(String(child)));
         }
     });
@@ -87,7 +104,8 @@ type AtlasTags = {
 
 const elements = {} as any;
 
-tags.forEach((tag) => {
+tags.forEach((tag) =>
+{
     const capitalizedName = tag.charAt(0).toUpperCase() + tag.slice(1);
     elements[capitalizedName] = (traits?: any, ...children: Children[]) =>
         Origin(tag, traits, ...children);
