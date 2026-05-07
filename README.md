@@ -67,7 +67,7 @@ document.body.appendChild(Counter({ label: 'My Counter' }));
 ```
 
 ### 3. Routing (`atlas/router`)
-Manage navigation and views with the `AtlasRouter`.
+Manage navigation and views with the `Router` (exported as `AtlasRouter`).
 
 ```typescript
 import { AtlasRouter } from 'atlas/router';
@@ -147,6 +147,18 @@ Gate(
 )
 ```
 
+### Lists & Loops (`Loop`)
+Use the `Loop` component for efficient rendering of reactive lists. It performs basic diffing to only update the DOM when items change.
+
+```typescript
+import { Loop, Li } from 'atlas/dom';
+
+Loop({
+    each: () => state.items,
+    render: (item) => Li({ text: item.name })
+})
+```
+
 ---
 
 ## 📚 API Reference
@@ -156,9 +168,11 @@ Gate(
 
 ### `atlas/dom`
 - `Div`, `Span`, `P`, `H1`, `Button`, `Input`, etc.: Functions to create specific HTML elements.
-- `Origin(tag, traits, ...children)`: The base function for creating any HTML element.
+- `Fragment(tag, traits, ...children)`: The base function for creating any HTML element.
 - `Structure(...children)`: Returns a `DocumentFragment` containing the provided children.
 - `Gate({ when, fallback }, ...children)`: A reactive wrapper for conditional rendering.
+- `Loop({ each, render })`: A reactive wrapper for rendering lists with basic diffing.
+- `H1, H2, H3, P, Button, Input, Pre, Code, ...`: Standard HTML elements as capitalized functions.
 
 ### `atlas/router`
 - `AtlasRouter({ rootId, routes })`: 

@@ -16,7 +16,6 @@ export type Traits<T extends keyof HTMLElementTagNameMap> =
 {
 
     style?: Reactive<string>;
-    text?: Reactive<string>;
 
     /* Event listener. */
     onClick?: (e: MouseEvent) => void;

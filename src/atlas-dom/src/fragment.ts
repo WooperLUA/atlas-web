@@ -8,7 +8,7 @@ import type {Traits, Children} from "@types";
  * @param {...Children[]} children - Child elements or text strings to be appended.
  * @returns {HTMLElement} The constructed HTML element.
  */
-export function Origin(tag: string, traits: any = {}, ...children: Children[]): HTMLElement
+export function Fragment(tag: string, traits: any = {}, ...children: Children[]): HTMLElement
 {
     const element = document.createElement(tag);
 
@@ -27,10 +27,6 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
                 if (key === 'style' && typeof freshValue === 'string')
                 {
                     element.style.cssText = freshValue;
-                }
-                else if (key === 'text')
-                {
-                    element.textContent = freshValue;
                 }
                 else (element as any)[key] = freshValue;
 
@@ -52,10 +48,6 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
             if (key === 'style' && typeof value === 'string')
             {
                 element.style.cssText = value;
-            }
-            else if (key === 'text')
-            {
-                element.textContent = String(value);
             }
             else
             {
@@ -92,7 +84,8 @@ export function Origin(tag: string, traits: any = {}, ...children: Children[]): 
 const tags = [
     'div', 'span', 'p', 'h1', 'h2', 'h3', 'button', 'input',
     'nav', 'section', 'article', 'a', 'main', 'header', 'footer',
-    'ul', 'li', 'img', 'form', 'label', 'canvas', 'video'
+    'ul', 'li', 'img', 'form', 'label', 'canvas', 'video',
+    'pre', 'code', 'blockquote', 'hr', 'br', 'em', 'strong'
 ] as const;
 
 type AtlasTags = {
@@ -108,11 +101,11 @@ tags.forEach((tag) =>
 {
     const capitalizedName = tag.charAt(0).toUpperCase() + tag.slice(1);
     elements[capitalizedName] = (traits?: any, ...children: Children[]) =>
-        Origin(tag, traits, ...children);
+        Fragment(tag, traits, ...children);
 });
 
 export const {
     Div, Span, P, H1, H2, H3, Button, Input, Nav, Section,
     Article, A, Main, Header, Footer, Ul, Li, Img, Form, Label,
-    Canvas, Video
+    Canvas, Video, Pre, Code, Blockquote, Hr, Br, Em, Strong
 } = elements as AtlasTags;

@@ -1,4 +1,5 @@
 export * from './src/structure.ts'
-export * from './src/origin'
+export * from './src/fragment.ts'
 export * from './src/gate.ts'
+export * from './src/loop.ts'
 import './src/lifecycle.ts'

@@ -124,6 +124,9 @@ export class Router
                     }
                 });
             }
+            else if (view instanceof DocumentFragment) {
+                this.root.appendChild(view);
+            }
             else if (view instanceof Node) {
                 this.root.appendChild(view);
             }
