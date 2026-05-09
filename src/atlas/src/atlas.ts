@@ -18,6 +18,11 @@ export function createState<T extends object>(initialState: T): T
     const handler: ProxyHandler<object> = {
         get(target, prop, receiver)
         {
+            if (prop === '__atlas_origin')
+            {
+                return {subscribe: (fn: Listener) => listeners.add(fn)};
+            }
+
             const value = Reflect.get(target, prop, receiver);
 
             if (value !== null && typeof value === 'object')
@@ -47,4 +52,45 @@ export function createState<T extends object>(initialState: T): T
     };
 
     return new Proxy(initialState, handler as any) as T;
+}
+
+/**
+ * createFormula
+ * Creates a derived, read-only reactive value.
+ *
+ * @param calculation - A function that returns the derived value.
+ * @returns A function that returns the current calculated value.
+ */
+export function createFormula<T>(calculation: () => T): () => T
+{
+    return () =>
+    {
+        return calculation();
+    };
+}
+
+
+/**
+ * createEffect
+ * Creates a persistent side-effect that re-runs whenever its state dependencies change.
+ *  @param effect - The code to run.
+ *  @param deps   - An array representing the dependency to watch.
+ */
+export function createEffect(effect: () => void, deps: any[]): void
+{
+    effect();
+
+    deps.forEach(dep =>
+    {
+        const origin = dep?.['__atlas_origin'];
+
+        if (origin && typeof origin.subscribe === 'function')
+        {
+            origin.subscribe(effect);
+        }
+        else
+        {
+            logger.warn("To watch a state property, pass the state object itself to the deps array.");
+        }
+    });
 }
