@@ -87,10 +87,32 @@ export function createEffect(effect: () => void, deps: any[]): void
         if (origin && typeof origin.subscribe === 'function')
         {
             origin.subscribe(effect);
-        }
-        else
+        } else
         {
             logger.warn("To watch a state property, pass the state object itself to the deps array.");
         }
     });
+}
+
+/**
+ * createArchive
+ * Creates a reactive state that persists in localStorage.
+ *
+ * @param key - The unique string key for storage.
+ * @param initialState - The default values if no snapshot exists.
+ */
+export function createArchive<T extends object>(key: string, initialState: T): T
+{
+    const saved = localStorage.getItem(key);
+    const data = saved ? JSON.parse(saved) : initialState;
+
+
+    const state = createState(data);
+
+    createEffect(() =>
+    {
+        localStorage.setItem(key, JSON.stringify(state));
+    }, [state]);
+
+    return state;
 }

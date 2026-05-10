@@ -25,7 +25,8 @@ function handleLifecycle(node: Node, hook: string)
 if (document.body)
 {
     lifecycleObserver.observe(document.body, {childList: true, subtree: true});
-} else
+}
+else
 {
     window.addEventListener('DOMContentLoaded', () =>
     {
