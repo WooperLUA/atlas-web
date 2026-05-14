@@ -1,4 +1,5 @@
 export * from './src/structure.ts'
+export * from './src/style-map.ts'
 export * from './src/fragment.ts'
 export * from './src/gate.ts'
 export * from './src/loop.ts'

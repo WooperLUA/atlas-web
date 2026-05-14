@@ -1,0 +1,1 @@
+export type AtlasCSS = Partial<CSSStyleDeclaration>;
