@@ -1,5 +1,5 @@
 {
-  "name": "atlas",
+  "name": "atlas-web",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/atlas.js",
@@ -22,7 +22,7 @@
       "types": "./dist/atlas-types.d.ts"
     }
   },
-  "private": true,
+  "private": false,
   "scripts": {
     "dev": "vite",
     "build": "vite build"
