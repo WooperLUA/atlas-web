@@ -5,21 +5,18 @@
   "main": "./dist/atlas.js",
   "module": "./dist/atlas.js",
   "types": "./dist/index.d.ts",
-  "files": [
-    "./dist"
-  ],
   "exports": {
     ".": {
-      "import": "./dist/atlas.js",
-      "types": "./dist/atlas.d.ts"
+      "types": "./dist/atlas.d.ts",
+      "import": "./dist/atlas.js"
     },
     "./dom": {
-      "import": "./dist/atlas-dom.js",
-      "types": "./dist/atlas-dom.d.ts"
+      "types": "./dist/atlas-dom.d.ts",
+      "import": "./dist/atlas-dom.js"
     },
     "./router": {
-      "import": "./dist/atlas-router.js",
-      "types": "./dist/atlas-router.d.ts"
+      "types": "./dist/atlas-router.js",
+      "import": "./dist/atlas-router.js"
     },
     "./types": {
       "types": "./dist/atlas-types.d.ts"

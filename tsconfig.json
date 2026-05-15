@@ -30,10 +30,12 @@
     "emitDeclarationOnly": true,
     "outDir": "dist",
 
+    "baseUrl": ".",
+
     "paths": {
       "@/*": ["src/*"],
-      "@atlas" : ["src/atlas/index.ts"],
-      "@atlas-dom" : ["src/atlas-dom/index.ts"],
+      "@atlas": ["src/atlas/index.ts"],
+      "@atlas-dom": ["src/atlas-dom/index.ts"],
       "@atlas-router": ["src/atlas-router/index.ts"],
       "@shared/*": ["src/shared/*"],
       "@interfaces": ["src/shared/interfaces/index.ts"],

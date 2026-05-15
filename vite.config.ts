@@ -11,16 +11,10 @@ export default defineConfig({
                 'atlas-router': path.resolve(__dirname, 'src/atlas-router/index.ts'),
                 'atlas-types': path.resolve(__dirname, 'src/shared/types/index.ts'),
             },
-            name: 'Atlas',
             formats: ['es']
         },
         rollupOptions: {
-            external: [
-                'atlas-web',
-                'atlas-web/dom',
-                'atlas-web/router',
-                'atlas-web/types'
-            ],
+            external: [],
             output: {
                 entryFileNames: '[name].js',
                 chunkFileNames: '[name]-[hash].js',
