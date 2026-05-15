@@ -6,7 +6,7 @@ import type {View} from "@types"
 export interface Route
 {
     /** The URL path pattern (e.g., '/home', '/user/:id'). */
-    path: string;
+    path: string | string[];
     /** The view function to execute when the path matches. */
     view: View;
 }

@@ -38,15 +38,10 @@ export class Router
         window.addEventListener("popstate", () => this.render());
 
         document.addEventListener("click", (e: MouseEvent) => {
-
             const anchor = (e.target as HTMLElement).closest("a");
 
-
             if (!anchor) return;
-
-
             if (anchor.target === "_blank") return;
-
 
             const isInternal = anchor.origin === window.location.origin;
             if (!isInternal) return;
@@ -84,28 +79,34 @@ export class Router
 
         const route = this.routes.find(r =>
         {
-            const paramNames: string[] = [];
-            const pattern = r.path
-                .replace(/:([^\/]+)/g, (_, name) =>
-                {
-                    paramNames.push(name);
-                    return '([^\/]+)';
-                })
-                .replace(/\*/g, '.*');
+            // Normalize routes into an array so we can process single strings and arrays uniformly
+            const pathDefinitions = Array.isArray(r.path) ? r.path : [r.path];
 
-            const regex = new RegExp(`^${pattern}$`);
-            const match = currentPath.match(regex);
+            // Look for any path pattern that matches the current URL path
+            return pathDefinitions.some(pathDef => {
+                const paramNames: string[] = [];
+                const pattern = pathDef
+                    .replace(/:([^\/]+)/g, (_, name) =>
+                    {
+                        paramNames.push(name);
+                        return '([^\/]+)';
+                    })
+                    .replace(/\*/g, '.*');
 
-            if (match)
-            {
-                params = paramNames.reduce((acc, name, index) =>
+                const regex = new RegExp(`^${pattern}$`);
+                const match = currentPath.match(regex);
+
+                if (match)
                 {
-                    acc[name] = match[index + 1]!;
-                    return acc;
-                }, {} as Record<string, string>);
-                return true;
-            }
-            return false;
+                    params = paramNames.reduce((acc, name, index) =>
+                    {
+                        acc[name] = match[index + 1]!;
+                        return acc;
+                    }, {} as Record<string, string>);
+                    return true;
+                }
+                return false;
+            });
         });
 
         if (route)
