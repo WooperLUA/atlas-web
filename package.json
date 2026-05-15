@@ -25,7 +25,7 @@
   "private": false,
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "rm -rf dist && vite build"
   },
   "devDependencies": {
     "@types/bun": "latest",

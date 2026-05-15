@@ -15,11 +15,16 @@ export default defineConfig({
             formats: ['es']
         },
         rollupOptions: {
+            external: [
+                'atlas-web',
+                'atlas-web/dom',
+                'atlas-web/router',
+                'atlas-web/types'
+            ],
             output: {
                 entryFileNames: '[name].js',
                 chunkFileNames: '[name]-[hash].js',
-            },
-            external: [] // Add any dependencies here later
+            }
         }
     },
     plugins: [dts({ insertTypesEntry: true })],
