@@ -5,6 +5,9 @@
   "main": "./dist/atlas.js",
   "module": "./dist/atlas.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "import": "./dist/atlas.js",
