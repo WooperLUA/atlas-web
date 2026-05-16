@@ -9,6 +9,7 @@ export default defineConfig({
                 atlas: path.resolve(__dirname, 'src/atlas/index.ts'),
                 'atlas-dom': path.resolve(__dirname, 'src/atlas-dom/index.ts'),
                 'atlas-router': path.resolve(__dirname, 'src/atlas-router/index.ts'),
+                "atlas-fetch": path.resolve(__dirname, "./src/atlas-fetch/index.ts"),
                 'atlas-types': path.resolve(__dirname, 'src/shared/types/index.ts'),
             },
             formats: ['es']
@@ -28,6 +29,7 @@ export default defineConfig({
             "@atlas": path.resolve(__dirname, "./src/atlas/index.ts"),
             "@atlas-dom": path.resolve(__dirname, "./src/atlas-dom/index.ts"),
             "@atlas-router": path.resolve(__dirname, "./src/atlas-router/index.ts"),
+            "@atlas-fetch": path.resolve(__dirname, "./src/atlas-fetch/index.ts"),
             "@shared": path.resolve(__dirname, "./src/shared"),
             "@interfaces": path.resolve(__dirname, "./src/shared/interfaces/index.ts"),
             "@services": path.resolve(__dirname, "./src/shared/services/index.ts"),

@@ -18,6 +18,10 @@
       "types": "./dist/atlas-router.js",
       "import": "./dist/atlas-router.js"
     },
+    "./fetch": {
+      "types": "./dist/atlas-fetch.js",
+      "import": "./dist/atlas-fetch.js"
+    },
     "./types": {
       "types": "./dist/atlas-types.d.ts"
     }
