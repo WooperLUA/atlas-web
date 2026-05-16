@@ -9,4 +9,5 @@ export interface RouterOptions
     rootId: string;
     /** The list of defined routes. */
     routes: Route[];
+    basePath?: string;
 }

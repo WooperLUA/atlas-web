@@ -8,6 +8,7 @@ export class Router
 {
     private routes: Route[];
     private root: HTMLElement;
+    private basePath: string;
 
     /**
      * Initializes a new Router instance.
@@ -18,6 +19,8 @@ export class Router
     constructor(config: RouterOptions)
     {
         this.routes = config.routes;
+        this.basePath = config.basePath ? config.basePath.replace(/\/$/, "") : "";
+
         const element = document.getElementById(config.rootId);
 
         if (!element)
@@ -44,7 +47,9 @@ export class Router
             if (anchor.target === "_blank") return;
 
             const isInternal = anchor.origin === window.location.origin;
-            if (!isInternal) return;
+            const isWithinBase = anchor.pathname.startsWith(this.basePath);
+
+            if (!isInternal || !isWithinBase) return;
 
             e.preventDefault();
             this.navigate(anchor.pathname);
@@ -60,10 +65,14 @@ export class Router
      */
     public navigate(path: string): void
     {
-        if (window.location.pathname === path) return;
+        const fullPath = path.startsWith(this.basePath)
+            ? path
+            : `${this.basePath}${path.startsWith('/') ? path : '/' + path}`;
 
-        logger.debug(`Navigating to: ${path}`);
-        window.history.pushState(null, "", path);
+        if (window.location.pathname === fullPath) return;
+
+        logger.debug(`Navigating to: ${fullPath}`);
+        window.history.pushState(null, "", fullPath);
         this.render();
     }
 
@@ -84,8 +93,10 @@ export class Router
 
             // Look for any path pattern that matches the current URL path
             return pathDefinitions.some(pathDef => {
+                const fullDef = `${this.basePath}${pathDef.startsWith('/') ? pathDef : '/' + pathDef}`;
+
                 const paramNames: string[] = [];
-                const pattern = pathDef
+                const pattern = fullDef
                     .replace(/:([^\/]+)/g, (_, name) =>
                     {
                         paramNames.push(name);
