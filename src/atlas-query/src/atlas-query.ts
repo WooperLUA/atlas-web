@@ -2,7 +2,7 @@ import {createState} from '@atlas';
 import {logger} from "@services";
 
 /**
- * Atlas-Fetch: Reactive wrapper for the native Fetch API.
+ * Reactive wrapper for the native Fetch API.
  *
  * This function initializes a reactive state object that tracks the progress
  * and result of an asynchronous request. It integrates directly with the
@@ -45,7 +45,7 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
                 const response = await fetch(request, options);
                 state.status = response.status;
 
-                if (!response.ok) logger.error("Atlas-Fetch", `Fetch error: ${response.statusText}`)
+                if (!response.ok) logger.error("Atlas-Query", `Fetch error: ${response.statusText}`)
                 state.data = await response.json();
             }
             state.error = null;
@@ -66,5 +66,49 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
     return {
         state,
         refresh: execute
+    };
+}
+
+/**
+ * Reactive wrapper for manual asynchronous actions (POST, PUT, DELETE).
+ *
+ * Unlike createFetch, mutations do not run automatically and are triggered by
+ * calling the returned `execute` function.
+ *
+ * @template T - The expected shape of the response data.
+ * @template V - The type of variables/arguments passed to the mutation.
+ */
+export function createMutation<T, V = void>(mutationFn: (variables: V) => Promise<T>)
+{
+    const state = createState({
+        data:    null as T | null,
+        error:   null as any | null,
+        loading: false,
+        status:  0
+    });
+
+    const execute = async (variables: V) =>
+    {
+        state.loading = true;
+        try
+        {
+            state.data = await mutationFn(variables);
+            state.error = null;
+        }
+        catch (err)
+        {
+            state.error = err;
+            state.data = null;
+            logger.error("Atlas-Query", `Mutation error: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        finally
+        {
+            state.loading = false;
+        }
+    };
+
+    return {
+        state,
+        execute
     };
 }
