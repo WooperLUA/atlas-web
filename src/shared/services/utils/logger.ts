@@ -1,7 +1,7 @@
 import type {Logger} from "@interfaces";
 import type {AtlasPrefixes} from '@types'
 
-const format = (prefix: AtlasPrefixes, message: string) => `${prefix}: ${message}`;
+const format = (prefix: AtlasPrefixes, message: string) => `[${prefix}]: ${message}`;
 
 export const logger: Logger = {
     log: (prefix: AtlasPrefixes, message: string, ...args: any[]) => {
