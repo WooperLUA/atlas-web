@@ -43,13 +43,10 @@ export class Router
         document.addEventListener("click", (e: MouseEvent) => {
             const anchor = (e.target as HTMLElement).closest("a");
 
-            if (!anchor) return;
-            if (anchor.target === "_blank") return;
+            if (!anchor || anchor.target === "_blank") return;
 
             const isInternal = anchor.origin === window.location.origin;
-            const isWithinBase = anchor.pathname.startsWith(this.basePath);
-
-            if (!isInternal || !isWithinBase) return;
+            if (!isInternal) return;
 
             e.preventDefault();
             this.navigate(anchor.pathname);
@@ -65,13 +62,14 @@ export class Router
      */
     public navigate(path: string): void
     {
-        const fullPath = path.startsWith(this.basePath)
-            ? path
-            : `${this.basePath}${path.startsWith('/') ? path : '/' + path}`;
+        let fullPath = path;
+        if (this.basePath && !path.startsWith(this.basePath)) {
+            const cleanPath = path.startsWith('/') ? path : '/' + path;
+            fullPath = `${this.basePath}${cleanPath}`;
+        }
 
         if (window.location.pathname === fullPath) return;
 
-        logger.debug(`Navigating to: ${fullPath}`);
         window.history.pushState(null, "", fullPath);
         this.render();
     }
