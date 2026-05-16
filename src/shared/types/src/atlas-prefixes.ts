@@ -1,0 +1,1 @@
+export type AtlasPrefixes = 'Atlas' | 'Atlas-Dom' | 'Atlas-Router'

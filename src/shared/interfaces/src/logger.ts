@@ -1,9 +1,9 @@
-export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+import type {AtlasPrefixes} from "@types";
 
 export interface Logger
 {
-    log(message: string, ...args: any[]): void;
-    warn(message: string, ...args: any[]): void;
-    error(message: string, ...args: any[]): void;
-    debug(message: string, ...args: any[]): void;
+    log(prefix: AtlasPrefixes, message: string, ...args: any[]): void;
+    warn(prefix: AtlasPrefixes, message: string, ...args: any[]): void;
+    error(prefix: AtlasPrefixes, message: string, ...args: any[]): void;
+    debug(prefix: AtlasPrefixes, message: string, ...args: any[]): void;
 }

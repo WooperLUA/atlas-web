@@ -43,7 +43,7 @@ export function createState<T extends object>(initialState: T): T
 
             if (success)
             {
-                logger.debug(`State changed: ${String(prop)}`, value);
+                logger.debug("Atlas", `State changed: ${String(prop)}`, value);
                 listeners.forEach(updateFn => updateFn());
             }
 
@@ -89,7 +89,7 @@ export function createEffect(effect: () => void, deps: any[]): void
             origin.subscribe(effect);
         } else
         {
-            logger.warn("To watch a state property, pass the state object itself to the deps array.");
+            logger.warn("Atlas", "To watch a state property, pass the state object itself to the deps array.");
         }
     });
 }

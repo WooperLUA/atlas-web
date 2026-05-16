@@ -4,3 +4,4 @@ export * from './src/traits.ts';
 export * from './src/state.ts'
 export * from './src/view.ts'
 export * from './src/atlas-css.ts'
+export * from './src/atlas-prefixes.ts'

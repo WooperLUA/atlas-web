@@ -25,8 +25,8 @@ export class Router
 
         if (!element)
         {
-            logger.error(`Root element #${config.rootId} not found.`);
-            throw new Error(`[Atlas]: Root element #${config.rootId} not found.`);
+            logger.error("Atlas-Router", `Root element #${config.rootId} not found.`);
+            throw new Error(`[Atlas-Router]: Root element #${config.rootId} not found.`);
         }
 
         this.root = element;
@@ -81,7 +81,7 @@ export class Router
     public render(): void
     {
         const currentPath = window.location.pathname;
-        logger.debug(`Rendering path: ${currentPath}`);
+        logger.debug("Atlas-Router", `Rendering path: ${currentPath}`);
         let params: Record<string, string> = {};
 
         const route = this.routes.find(r =>

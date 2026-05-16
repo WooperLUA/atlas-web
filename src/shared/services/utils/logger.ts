@@ -1,20 +1,19 @@
 import type {Logger} from "@interfaces";
+import type {AtlasPrefixes} from '@types'
 
-const prefix = "[Atlas]"
-
-const format = (message: string) => `${prefix}: ${message}`;
+const format = (prefix: AtlasPrefixes, message: string) => `${prefix}: ${message}`;
 
 export const logger: Logger = {
-    log: (message: string, ...args: any[]) => {
-        console.log(format(message), ...args);
+    log: (prefix: AtlasPrefixes, message: string, ...args: any[]) => {
+        console.log(format(prefix, message), ...args);
     },
-    warn: (message: string, ...args: any[]) => {
-        console.warn(format(message), ...args);
+    warn: (prefix: AtlasPrefixes, message: string, ...args: any[]) => {
+        console.warn(format(prefix, message), ...args);
     },
-    error: (message: string, ...args: any[]) => {
-        console.error(format(message), ...args);
+    error: (prefix: AtlasPrefixes, message: string, ...args: any[]) => {
+        console.error(format(prefix, message), ...args);
     },
-    debug: (message: string, ...args: any[]) => {
-        console.debug(format(message), ...args);
+    debug: (prefix: AtlasPrefixes, message: string, ...args: any[]) => {
+        console.debug(format(prefix, message), ...args);
     }
 }
