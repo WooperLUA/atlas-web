@@ -3,6 +3,24 @@ import {logger} from "@services";
 
 /**
  * Atlas-Fetch: Reactive wrapper for the native Fetch API.
+ *
+ * This function initializes a reactive state object that tracks the progress
+ * and result of an asynchronous request. It integrates directly with the
+ * Atlas reactivity system, triggering UI updates automatically when data,
+ * loading status, or errors change.
+ *
+ * @template T - The expected shape of the response data.
+ *
+ * @param {RequestInfo | (() => Promise<T>)} request - The network request to perform.
+ * Can be a URL string, a Request object, or a custom async function that returns a Promise.
+ *
+ * @param {RequestInit} [options={}] - Standard fetch configuration options (method, headers, body, etc.).
+ * Only used if `request` is a URL or Request object.
+ *
+ * @returns {Object} An object containing:
+ * - `state`: A reactive Atlas state containing `data`, `error`, `loading`, and `status`.
+ * - `refresh`: A function to manually re-trigger the asynchronous operation.
+ *
  */
 export function createFetch<T>(request: RequestInfo | (() => Promise<T>), options: RequestInit = {})
 {
@@ -47,6 +65,6 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
 
     return {
         state,
-        retry: execute
+        refresh: execute
     };
 }
