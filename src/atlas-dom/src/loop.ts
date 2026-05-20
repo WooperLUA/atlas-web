@@ -18,24 +18,23 @@ export function Loop<T>(props: LoopTraits<T>): DocumentFragment
     const update = () =>
     {
         const newItems = props.each();
-
         const newNodes: Node[] = [];
 
         for (let i = 0; i < newItems.length; i++)
         {
             if (i < currentItems.length && currentItems[i] === newItems[i])
             {
-
                 newNodes[i] = currentNodes[i]!;
-            } else
+            }
+            else
             {
-
                 const rendered = props.render(newItems[i]!, i);
                 let node: Node;
                 if (rendered instanceof Node)
                 {
                     node = rendered;
-                } else
+                }
+                else
                 {
                     node = document.createTextNode(String(rendered));
                 }
@@ -43,17 +42,15 @@ export function Loop<T>(props: LoopTraits<T>): DocumentFragment
 
                 if (i < currentNodes.length)
                 {
-
                     const oldNode = currentNodes[i]!;
                     oldNode.parentNode?.replaceChild(node, oldNode);
-                } else
+                }
+                else
                 {
-
                     marker.before(node);
                 }
             }
         }
-
 
         if (currentNodes.length > newItems.length)
         {
@@ -67,11 +64,18 @@ export function Loop<T>(props: LoopTraits<T>): DocumentFragment
         currentNodes = newNodes;
     };
 
-    if ((window as any)._atlas_subscribe)
+
+    const globalContext = (window as any)._atlas;
+    if (globalContext) globalContext.activeListener = update;
+
+    try
     {
-        (window as any)._atlas_subscribe(update);
+        update();
+    }
+    finally
+    {
+        if (globalContext) globalContext.activeListener = null;
     }
 
-    update();
     return fragment;
 }

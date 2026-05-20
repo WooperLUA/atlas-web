@@ -1,53 +1,50 @@
-import type {Children} from "@types";
+import { Structure } from './structure.ts';
+import type { Children } from "@types";
 
-export function Gate(
-    props: { when: () => boolean; fallback?: HTMLElement | string | Node },
-    ...children: Children[]
-): DocumentFragment
+/**
+ * Gate
+ * Conditionally renders child elements based on a reactive condition function.
+ *
+ * @param {() => boolean} when - A reactive function that returns a boolean condition.
+ * @param {...Children[]} children - Elements to render when the condition is true.
+ * @returns {DocumentFragment} A live DOM fragment that handles its own updates.
+ */
+export function Gate(when: () => boolean, ...children: Children[]): DocumentFragment
 {
-    const marker = document.createComment("atlas-show");
     const fragment = document.createDocumentFragment();
+    const marker = document.createComment("atlas-gate");
     fragment.appendChild(marker);
 
-    let currentContent: Node[] = [];
+    let currentNodes: Node[] = [];
 
     const update = () =>
     {
+        currentNodes.forEach(node => node.parentNode?.removeChild(node));
 
-        currentContent.forEach(node => node.parentNode?.removeChild(node));
-        currentContent = [];
+        const nextContent = when() ? Structure(...children) : null;
 
-        if (props.when())
+        if (nextContent)
         {
-
-            const tempFrag = document.createDocumentFragment();
-            children.flat().forEach(child =>
-            {
-                if (child instanceof Node) tempFrag.appendChild(child);
-                else tempFrag.appendChild(document.createTextNode(String(child)));
-            });
-
-
-            currentContent = Array.from(tempFrag.childNodes);
-
-
-            marker.before(tempFrag);
-        } else if (props.fallback)
+            currentNodes = Array.from(nextContent.childNodes);
+            marker.before(nextContent);
+        }
+        else
         {
-            const fallbackNode = props.fallback instanceof Node
-                ? props.fallback
-                : document.createTextNode(String(props.fallback));
-
-            currentContent = [fallbackNode];
-            marker.before(fallbackNode);
+            currentNodes = [];
         }
     };
 
-    if ((window as any)._atlas_subscribe)
+    const globalContext = (window as any)._atlas;
+    if (globalContext) globalContext.activeListener = update;
+
+    try
     {
-        (window as any)._atlas_subscribe(update);
+        update();
+    }
+    finally
+    {
+        if (globalContext) globalContext.activeListener = null;
     }
 
-    update();
     return fragment;
 }

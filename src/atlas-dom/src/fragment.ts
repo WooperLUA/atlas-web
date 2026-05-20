@@ -36,12 +36,18 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
                 }
             };
 
-            if ((window as any)._atlas_subscribe)
-            {
-                (window as any)._atlas_subscribe(update);
-            }
+            // Capture dependencies during the initial run of this trait function
+            const globalContext = (window as any)._atlas;
+            if (globalContext) globalContext.activeListener = update;
 
-            update();
+            try
+            {
+                update();
+            }
+            finally
+            {
+                if (globalContext) globalContext.activeListener = null;
+            }
         }
         else
         {
