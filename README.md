@@ -24,36 +24,6 @@ https://wooperlua.github.io/atlas-docs/
 
 --------------------------------------------------------------------------------
 
-# 🛠️ Quick Start
-
-Atlas is organized into modular entry points. Here is how you use them:
-
-### Core & Reactivity
-import { state, effect } from 'atlas-web';
-
-const data = state({ count: 0 });
-effect(() => console.log(`Count is: ${data.count}`));
-
-### DOM Manipulation
-import { h } from 'atlas-web/dom';
-
-const element = h('div', { class: 'container' }, [
-    h('h1', {}, 'Hello Atlas')
-]);
-
-### Routing
-import { AtlasRouter } from 'atlas-web/router';
-
-new AtlasRouter({
-    rootId: 'app',
-    routes: [
-        { path: '/', view: HomeView },
-        { path: '/about', view: AboutView }
-    ]
-});
-
---------------------------------------------------------------------------------
-
 # ⌨️ TypeScript Support
 
 Atlas is written in TypeScript and provides full type safety. You can import internal types if needed:
