@@ -1,6 +1,6 @@
 {
   "name": "atlas-web",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "type": "module",
   "main": "./dist/atlas.js",
   "module": "./dist/atlas.js",
