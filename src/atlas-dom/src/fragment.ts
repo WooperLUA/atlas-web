@@ -1,13 +1,5 @@
 import type { Traits, Children } from "@types";
 
-/**
- * Creates a new HTML or SVG element with the specified tag, traits, and children.
- *
- * @param {string} tag - The HTML or SVG tag name (e.g., 'div', 'svg').
- * @param {any} [traits={}] - An object containing attributes, events, and reactive bindings.
- * @param {...Children[]} children - Child elements or text strings to be appended.
- * @returns {HTMLElement | SVGElement} The constructed element.
- */
 export function Fragment(tag: string, traits: any = {}, ...children: Children[]): HTMLElement | SVGElement
 {
     const svgTags = [
@@ -19,12 +11,12 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
     ];
     const isSvg = svgTags.includes(tag.toLowerCase());
 
-    // Explicitly cast document.createElementNS to SVGElement to resolve TS2322
     const element = isSvg
         ? (document.createElementNS('http://www.w3.org/1999/svg', tag) as SVGElement)
         : document.createElement(tag);
 
-    for (const [key, value] of Object.entries(traits))
+    // Call window.Object.entries explicitly to prevent the variable name minification clash
+    for (const [key, value] of window.Object.entries(traits))
     {
         if (key.startsWith('on') && typeof value === 'function')
         {
@@ -99,38 +91,21 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
 }
 
 const tags = [
-    // Root & Metadata
     'html', 'head', 'title', 'base', 'link', 'meta', 'style',
-
-    // Structure & Sections
     'body', 'article', 'section', 'nav', 'aside', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
     'header', 'footer', 'address', 'main',
-
-    // Text Content
     'p', 'hr', 'pre', 'blockquote', 'ol', 'ul', 'menu', 'li', 'dl', 'dt', 'dd',
     'figure', 'figcaption', 'div',
-
-    // Inline Semantics
     'a', 'em', 'strong', 'small', 's', 'cite', 'q', 'dfn', 'abbr', 'ruby', 'rt', 'rp',
     'data', 'time', 'code', 'var', 'samp', 'kbd', 'sub', 'sup', 'i', 'b', 'u', 'mark',
     'bdi', 'bdo', 'span', 'br', 'wbr',
-
-    // Multimedia & Embedded
     'img', 'iframe', 'embed', 'object', 'picture', 'source', 'portal',
     'video', 'audio', 'track', 'canvas', 'map', 'area',
-
-    // Forms & Interactive
     'form', 'label', 'input', 'button', 'select', 'datalist', 'optgroup', 'option',
     'textarea', 'output', 'progress', 'meter', 'fieldset', 'legend',
     'details', 'summary', 'dialog', 'search',
-
-    // Edits & Scripting
     'ins', 'del', 'script', 'noscript', 'template', 'slot',
-
-    // Tables
     'table', 'caption', 'colgroup', 'col', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th',
-
-    // Core SVG Elements
     'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'g',
     'defs', 'clipPath', 'text', 'use', 'animate', 'animateMotion', 'animateTransform',
     'desc', 'foreignObject', 'image', 'linearGradient', 'marker', 'mask', 'metadata',
@@ -144,10 +119,6 @@ type AtlasTags = {
     ) => HTMLElement | SVGElement;
 };
 
-/**
- * Dynamic Proxy backing the element factories.
- * Ensures compatibility with any standard or experimental HTML tag at runtime.
- */
 export const Atlas = new Proxy({} as any, {
     get(target, prop: string) {
         if (typeof prop !== 'string') return target[prop];
