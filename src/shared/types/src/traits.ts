@@ -1,3 +1,5 @@
+import type {AtlasCSS} from "@shared/types";
+
 /**
  * Represents a value that can be either static or a reactive function.
  */
@@ -15,7 +17,7 @@ export type Traits<T extends keyof HTMLElementTagNameMap> =
     } &
 {
 
-    style?: Reactive<string>;
+    style?: Reactive<AtlasCSS | string>;
 
     /* Event listener. */
     onClick?: (e: MouseEvent) => void;

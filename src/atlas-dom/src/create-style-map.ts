@@ -1,7 +1,7 @@
 import type { AtlasCSS } from "@types";
 
 /**
- * StyleMap scopes a map of CSS rules to a unique container class to prevent style leakage.
+ * createStyleMap scopes a map of CSS rules to a unique container class to prevent style leakage.
  *
  * @param css - A record where keys are CSS selectors and values are {@link AtlasCSS} objects.
  *              Supports multiple selectors (comma-separated) and camelCase properties.
@@ -9,7 +9,7 @@ import type { AtlasCSS } from "@types";
  * @returns A unique class name string (e.g., "atlas-abc12") to be applied to the
  *          component's root element.
  */
-export function StyleMap(css: Record<string, AtlasCSS>): string {
+export function createStyleMap(css: Record<string, AtlasCSS>): string {
     const scopeId = `atlas-${Math.random().toString(36).slice(2, 7)}`;
 
     const scopedCss = Object.entries(css).map(([selector, properties]) => {

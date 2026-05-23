@@ -1,3 +1,5 @@
+import type { AtlasNode } from "@types";
+
 const lifecycleObserver = new MutationObserver((mutations) =>
 {
     mutations.forEach((mutation) =>
@@ -11,15 +13,17 @@ function handleLifecycle(node: Node, hook: string)
 {
     if (!(node instanceof HTMLElement)) return;
 
-    if ((node as any)[hook])
-        (node as any)[hook](node);
+    const atlasNode = node as AtlasNode<any>;
 
-    node.querySelectorAll('*').forEach(el =>
+    if ((atlasNode as any)[hook])
+        (atlasNode as any)[hook](atlasNode);
+
+    atlasNode.querySelectorAll('*').forEach((el: any) =>
     {
-        if ((el as any)[hook])
-            (el as any)[hook](el);
+        const atlasChild = el as AtlasNode<any>;
+        if ((atlasChild as any)[hook])
+            (atlasChild as any)[hook](atlasChild);
     });
-
 }
 
 if (document.body)

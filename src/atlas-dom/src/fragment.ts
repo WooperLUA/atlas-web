@@ -1,6 +1,20 @@
-import type { Traits, Children } from "@types";
+import type {Traits, Children, AtlasNode} from "@types";
+import {logger} from "@services";
 
-export function Fragment(tag: string, traits: any = {}, ...children: Children[]): HTMLElement | SVGElement
+function applyStyle(element: HTMLElement, style: any)
+{
+    if (typeof style === 'string')
+    {
+        element.style.cssText = style;
+    }
+    else if (style && typeof style === 'object')
+    {
+        element.style.cssText = '';
+        window.Object.assign(element.style, style);
+    }
+}
+
+export function Fragment(tag: string, traits: any = {}, ...children: Children[]): AtlasNode<any>
 {
     const svgTags = [
         'svg', 'path', 'circle', 'rect', 'line', 'polyline',
@@ -28,11 +42,14 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
             const update = () =>
             {
                 const freshValue = value();
-                if (key === 'style' && typeof freshValue === 'string')
+                if (key === 'style')
                 {
-                    (element as HTMLElement).style.cssText = freshValue;
+                    applyStyle(element as HTMLElement, freshValue);
                 }
-                else (element as any)[key] = freshValue;
+                else
+                {
+                    (element as any)[key] = freshValue;
+                }
 
                 if ((element as any)._atlas_onUpdate)
                 {
@@ -54,9 +71,9 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
         }
         else
         {
-            if (key === 'style' && typeof value === 'string')
+            if (key === 'style')
             {
-                (element as HTMLElement).style.cssText = value;
+                applyStyle(element as HTMLElement, value);
             }
             else
             {
@@ -78,10 +95,15 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
 
     children.flat().forEach(child =>
     {
+        if (child instanceof HTMLElement && !(child as any)._atlas_onMount) {
+            logger.warn('Atlas-Dom','You are appending a raw HTMLElement. Please use Atlas factory functions instead.' )
+        }
+
         if (child instanceof Node)
         {
             element.appendChild(child);
-        } else if (typeof child === 'string' || typeof child === 'number')
+        }
+        else if (typeof child === 'string' || typeof child === 'number')
         {
             element.appendChild(document.createTextNode(String(child)));
         }
@@ -116,16 +138,18 @@ type AtlasTags = {
     [K in typeof tags[number] as Capitalize<K>]: (
         traits?: Traits<K extends keyof HTMLElementTagNameMap ? K : 'div'>,
         ...children: Children[]
-    ) => HTMLElement | SVGElement;
+    ) => AtlasNode<any>;
 };
 
 export const Atlas = new Proxy({} as any, {
-    get(target, prop: string) {
+    get(target, prop: string)
+    {
         if (typeof prop !== 'string') return target[prop];
 
         const tag = prop.charAt(0).toLowerCase() + prop.slice(1);
 
-        if (!target[prop]) {
+        if (!target[prop])
+        {
             target[prop] = (traits?: any, ...children: Children[]) =>
                 Fragment(tag, traits, ...children);
         }

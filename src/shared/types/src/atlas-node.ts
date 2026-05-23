@@ -1,0 +1,1 @@
+export type AtlasNode<K extends keyof HTMLElementTagNameMap = 'div'> = HTMLElementTagNameMap[K];

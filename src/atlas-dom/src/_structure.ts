@@ -1,6 +1,6 @@
 import type {Children} from "@types";
 
-export function Structure(...children: Children[]): DocumentFragment
+export function _Structure(...children: Children[]): DocumentFragment
 {
     const fragment = document.createDocumentFragment();
 
