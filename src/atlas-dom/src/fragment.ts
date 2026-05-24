@@ -29,6 +29,8 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
         ? (document.createElementNS('http://www.w3.org/1999/svg', tag) as SVGElement)
         : document.createElement(tag);
 
+    (element as any)._atlas_cleanups = [];
+
     // Call window.Object.entries explicitly to prevent the variable name minification clash
     for (const [key, value] of window.Object.entries(traits))
     {
@@ -58,7 +60,13 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
             };
 
             const globalContext = (window as any)._atlas;
-            if (globalContext) globalContext.activeListener = update;
+            if (globalContext) {
+                globalContext.activeListener = update;
+                globalContext.registerUnsubscribe = (cleanupFn: () => void) => {
+                    (element as any)._atlas_cleanups.push(cleanupFn);
+                };
+            }
+
 
             try
             {

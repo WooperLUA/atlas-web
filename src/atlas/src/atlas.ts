@@ -16,6 +16,11 @@ export function createState<T extends object>(initialState: T): T
     const handler: ProxyHandler<object> = {
         get(target, prop, receiver)
         {
+            if (prop === '__atlas_unsubscribe')
+            {
+                return (fn: Listener) => listeners.delete(fn);
+            }
+
             if (prop === '__atlas_origin')
             {
                 return {subscribe: (fn: Listener) => listeners.add(fn)};
@@ -25,6 +30,11 @@ export function createState<T extends object>(initialState: T): T
             if (atlasGlobal.activeListener)
             {
                 listeners.add(atlasGlobal.activeListener);
+
+                if (atlasGlobal.registerUnsubscribe) {
+                    const currentListener = atlasGlobal.activeListener;
+                    atlasGlobal.registerUnsubscribe(() => listeners.delete(currentListener));
+                }
             }
 
             const value = Reflect.get(target, prop, receiver);

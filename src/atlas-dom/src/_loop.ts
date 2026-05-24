@@ -1,4 +1,5 @@
 import type { Children } from "@types";
+import { handleCleanupLifecycle } from "./lifecycle.ts";
 
 /**
  * _Loop
@@ -44,6 +45,9 @@ export function _Loop<T>(
 
                 if (i < currentNodes.length) {
                     const oldNode = currentNodes[i]!;
+
+                    handleCleanupLifecycle(oldNode);
+
                     oldNode.parentNode?.replaceChild(node, oldNode);
                 } else {
                     marker.parentNode?.insertBefore(node, marker);
@@ -53,7 +57,11 @@ export function _Loop<T>(
 
         if (currentNodes.length > newItems.length) {
             for (let i = newItems.length; i < currentNodes.length; i++) {
-                currentNodes[i]?.parentNode?.removeChild(currentNodes[i]!);
+                const nodeToRemove = currentNodes[i];
+                if (nodeToRemove) {
+                    handleCleanupLifecycle(nodeToRemove);
+                    nodeToRemove.parentNode?.removeChild(nodeToRemove);
+                }
             }
         }
 
