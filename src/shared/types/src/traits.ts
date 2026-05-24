@@ -13,7 +13,9 @@ export type Reactive<T> = T | (() => T);
  */
 export type Traits<T extends keyof HTMLElementTagNameMap> =
     {
-        [K in keyof Omit<Partial<HTMLElementTagNameMap[T]>, 'style'>]: Reactive<HTMLElementTagNameMap[T][K]>;
+        [P in keyof HTMLElementTagNameMap[T]]?: HTMLElementTagNameMap[T][P] extends string
+        ? Reactive<string | number>
+        : Reactive<HTMLElementTagNameMap[T][P]>;
     } &
 {
 
