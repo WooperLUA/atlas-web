@@ -135,6 +135,13 @@ const tags = [
 ] as const;
 
 type AtlasTags = {
+    /**
+     * Creates a reactive Atlas component.
+     *
+     * @param traits HTML attributes, DOM properties, reactive styles, and lifecycle hooks.
+     * @param children Child elements, strings, numbers, or reactive components.
+     * @returns An AtlasNode seamlessly integrated into the reactivity graph.
+     */
     [K in typeof tags[number] as Capitalize<K>]: (
         traits?: Traits<K extends keyof HTMLElementTagNameMap ? K : 'div'>,
         ...children: Children[]
