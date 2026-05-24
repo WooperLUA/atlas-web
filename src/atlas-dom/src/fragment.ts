@@ -164,12 +164,12 @@ export const Atlas = new Proxy({} as any, {
     }
 }) as AtlasTags & Record<string, any>;
 
-const elements = {} as any;
+const elements = {} as AtlasTags;
 
 tags.forEach((tag) =>
 {
-    const capitalizedName = tag.charAt(0).toUpperCase() + tag.slice(1);
-    elements[capitalizedName] = Atlas[capitalizedName];
+    const capitalizedName = tag.charAt(0).toUpperCase() + tag.slice(1) as keyof AtlasTags;
+    (elements as any)[capitalizedName] = Atlas[capitalizedName as keyof AtlasTags];
 });
 
 export const {
