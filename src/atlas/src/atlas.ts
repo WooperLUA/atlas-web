@@ -29,90 +29,113 @@ function internalUntracked<T>(action: () => T): T
 export function createState<T extends object>(initialState: T): T
 {
     const propertyListenersMap = new Map<string | symbol, Set<Listener>>();
+    const instanceListeners = new Set<Listener>();
 
-    const handler: ProxyHandler<object> = {
-        get(target, prop, receiver)
-        {
-            // Unsubscribe channel hook used by the lifecycle cleanups engine
-            if (prop === '__atlas_unsubscribe')
+    // Shared handler that forwards triggers up to its owners
+    const createHandler = (onNotify: () => void): ProxyHandler<object> => {
+        return {
+            get(target, prop, receiver)
             {
-                return (fn: Listener) =>
+                if (prop === '__atlas_unsubscribe')
                 {
-                    propertyListenersMap.forEach(listenersSet => listenersSet.delete(fn));
-                };
-            }
-
-            if (prop === '__atlas_origin')
-            {
-                return {
-                    subscribe: (fn: Listener, key?: string | symbol) =>
-                               {
-                                   if (key)
-                                   {
-                                       if (!propertyListenersMap.has(key)) propertyListenersMap.set(key, new Set());
-                                       propertyListenersMap.get(key)!.add(fn);
-                                   }
-                               }
-                };
-            }
-
-
-            if (atlasGlobal.activeListener)
-            {
-                const currentListener = atlasGlobal.activeListener;
-
-                if (!propertyListenersMap.has(prop))
-                {
-                    propertyListenersMap.set(prop, new Set());
-                }
-                propertyListenersMap.get(prop)!.add(currentListener);
-
-                if (atlasGlobal.registerUnsubscribe)
-                {
-                    atlasGlobal.registerUnsubscribe(() =>
+                    return (fn: Listener) =>
                     {
-                        const listenersSet = propertyListenersMap.get(prop);
-                        if (listenersSet) listenersSet.delete(currentListener);
-                    });
+                        instanceListeners.delete(fn);
+                        propertyListenersMap.forEach(listenersSet => listenersSet.delete(fn));
+                    };
                 }
-            }
 
-            const value = Reflect.get(target, prop, receiver);
-
-            if (value !== null && typeof value === 'object')
-            {
-                return new Proxy(value, handler as any);
-            }
-
-            return value;
-        },
-        set(target, prop, value, receiver)
-        {
-            if (Reflect.get(target, prop, receiver) === value)
-            {
-                return true;
-            }
-
-            const success = Reflect.set(target, prop, value, receiver);
-
-            if (success)
-            {
-                internalUntracked(() => {
-                    logger.debug("Atlas", `State changed: ${String(prop)}`, value);
-                });
-
-                const targets = propertyListenersMap.get(prop);
-                if (targets)
+                if (prop === '__atlas_origin')
                 {
-                    Array.from(targets).forEach(updateFn => updateFn());
+                    return {
+                        subscribe: (fn: Listener, key?: string | symbol) =>
+                                   {
+                                       if (key)
+                                       {
+                                           if (!propertyListenersMap.has(key)) propertyListenersMap.set(key, new Set());
+                                           propertyListenersMap.get(key)!.add(fn);
+                                       }
+                                       else
+                                       {
+                                           instanceListeners.add(fn);
+                                       }
+                                   }
+                    };
                 }
-            }
 
-            return success;
-        }
+                if (atlasGlobal.activeListener)
+                {
+                    const currentListener = atlasGlobal.activeListener;
+
+                    if (!propertyListenersMap.has(prop))
+                    {
+                        propertyListenersMap.set(prop, new Set());
+                    }
+                    propertyListenersMap.get(prop)!.add(currentListener);
+                    instanceListeners.add(currentListener);
+
+                    if (atlasGlobal.registerUnsubscribe)
+                    {
+                        atlasGlobal.registerUnsubscribe(() =>
+                        {
+                            instanceListeners.delete(currentListener);
+                            const listenersSet = propertyListenersMap.get(prop);
+                            if (listenersSet) listenersSet.delete(currentListener);
+                        });
+                    }
+                }
+
+                const value = Reflect.get(target, prop, receiver);
+
+                if (value !== null && typeof value === 'object')
+                {
+                    // Recursively wrap children, bubbling their notifications back up here
+                    return new Proxy(value, createHandler(() => {
+                        onNotify();
+                    }));
+                }
+
+                return value;
+            },
+            set(target, prop, value, receiver)
+            {
+                if (Reflect.get(target, prop, receiver) === value)
+                {
+                    return true;
+                }
+
+                const success = Reflect.set(target, prop, value, receiver);
+
+                if (success)
+                {
+                    internalUntracked(() => {
+                        logger.debug("Atlas", `State changed: ${String(prop)}`, value);
+                    });
+
+
+                    const uniqueListeners = new Set<Listener>(instanceListeners);
+                    const propertyTargets = propertyListenersMap.get(prop);
+                    if (propertyTargets)
+                    {
+                        propertyTargets.forEach(lnk => uniqueListeners.add(lnk));
+                    }
+                    Array.from(uniqueListeners).forEach(updateFn => updateFn());
+
+
+                    onNotify();
+                }
+
+                return success;
+            }
+        };
     };
 
-    return new Proxy(initialState, handler as any) as T;
+    // Root node notification trigger
+    const rootNotify = () => {
+        Array.from(instanceListeners).forEach(updateFn => updateFn());
+    };
+
+    return new Proxy(initialState, createHandler(rootNotify)) as T;
 }
 
 /**
