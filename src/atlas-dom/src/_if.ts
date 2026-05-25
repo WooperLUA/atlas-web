@@ -12,13 +12,16 @@ export function _If(when: () => boolean, ...children: Children[]): DocumentFragm
     const fragment = document.createDocumentFragment();
     const marker = document.createComment("atlas-if");
     fragment.appendChild(marker);
-
     let currentNodes: Node[] = [];
 
     const update = () => {
         currentNodes.forEach(node => node.parentNode?.removeChild(node));
         if (when()) {
+            const prevListener = (window as any)._atlas?.activeListener;
+            (window as any)._atlas.activeListener = () => {};
             const nextContent = _Structure(...children);
+            (window as any)._atlas.activeListener = prevListener;
+
             currentNodes = Array.from(nextContent.childNodes);
             marker.parentNode?.insertBefore(nextContent, marker);
         } else {
@@ -29,6 +32,5 @@ export function _If(when: () => boolean, ...children: Children[]): DocumentFragm
     (window as any)._atlas.activeListener = update;
     update();
     (window as any)._atlas.activeListener = null;
-
     return fragment;
 }
