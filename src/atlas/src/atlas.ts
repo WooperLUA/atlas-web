@@ -2,38 +2,78 @@ import {logger} from "@services";
 
 export type Listener = () => void;
 
-// Global ref for activeListener
-const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = { activeListener: null });
+// Global context tracking active engine evaluation runs
+const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = { activeListener: null, registerUnsubscribe: null });
 
 /**
- * Creates a reactive state object.
+ * Runs a block of code internally without registering any reactive dependencies.
+ * Used to safeguard logging and internal framework tracking mechanisms.
+ */
+function internalUntracked<T>(action: () => T): T
+{
+    const prevListener = atlasGlobal.activeListener;
+    atlasGlobal.activeListener = null;
+    try
+    {
+        return action();
+    }
+    finally
+    {
+        atlasGlobal.activeListener = prevListener;
+    }
+}
+
+/**
+ * Creates a reactive state object with fine-grained, property-keyed tracking.
  */
 export function createState<T extends object>(initialState: T): T
 {
-    // Local listener storage unique to THIS state instance
-    const listeners = new Set<Listener>();
+    const propertyListenersMap = new Map<string | symbol, Set<Listener>>();
 
     const handler: ProxyHandler<object> = {
         get(target, prop, receiver)
         {
+            // Unsubscribe channel hook used by the lifecycle cleanups engine
             if (prop === '__atlas_unsubscribe')
             {
-                return (fn: Listener) => listeners.delete(fn);
+                return (fn: Listener) =>
+                {
+                    propertyListenersMap.forEach(listenersSet => listenersSet.delete(fn));
+                };
             }
 
             if (prop === '__atlas_origin')
             {
-                return {subscribe: (fn: Listener) => listeners.add(fn)};
+                return {
+                    subscribe: (fn: Listener, key?: string | symbol) =>
+                               {
+                                   if (key)
+                                   {
+                                       if (!propertyListenersMap.has(key)) propertyListenersMap.set(key, new Set());
+                                       propertyListenersMap.get(key)!.add(fn);
+                                   }
+                               }
+                };
             }
 
-            // If a reactive context is currently running, automatically subscribe it
+
             if (atlasGlobal.activeListener)
             {
-                listeners.add(atlasGlobal.activeListener);
+                const currentListener = atlasGlobal.activeListener;
 
-                if (atlasGlobal.registerUnsubscribe) {
-                    const currentListener = atlasGlobal.activeListener;
-                    atlasGlobal.registerUnsubscribe(() => listeners.delete(currentListener));
+                if (!propertyListenersMap.has(prop))
+                {
+                    propertyListenersMap.set(prop, new Set());
+                }
+                propertyListenersMap.get(prop)!.add(currentListener);
+
+                if (atlasGlobal.registerUnsubscribe)
+                {
+                    atlasGlobal.registerUnsubscribe(() =>
+                    {
+                        const listenersSet = propertyListenersMap.get(prop);
+                        if (listenersSet) listenersSet.delete(currentListener);
+                    });
                 }
             }
 
@@ -57,8 +97,15 @@ export function createState<T extends object>(initialState: T): T
 
             if (success)
             {
-                logger.debug("Atlas", `State changed: ${String(prop)}`, value);
-                listeners.forEach(updateFn => updateFn());
+                internalUntracked(() => {
+                    logger.debug("Atlas", `State changed: ${String(prop)}`, value);
+                });
+
+                const targets = propertyListenersMap.get(prop);
+                if (targets)
+                {
+                    Array.from(targets).forEach(updateFn => updateFn());
+                }
             }
 
             return success;
@@ -85,7 +132,6 @@ export function createEffect(effect: () => void): void
         }
     };
 
-    // Automatically track dependencies on the initial run
     runEffect();
 }
 
@@ -115,4 +161,20 @@ export function createArchive<T extends object>(key: string, initialState: T): T
     });
 
     return state;
+}
+/**
+ * Converts a reactive object into a plain object where each property
+ * is a function pointing back to the original proxy key.
+ * This safely permits destructuring without breaking reactivity.
+ */
+export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K] }
+{
+    const refs: any = {};
+
+    for (const key in proxy)
+    {
+        refs[key] = () => proxy[key];
+    }
+
+    return refs;
 }
