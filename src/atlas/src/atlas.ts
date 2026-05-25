@@ -5,10 +5,6 @@ export type Listener = () => void;
 // Global context tracking active engine evaluation runs
 const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = { activeListener: null, registerUnsubscribe: null });
 
-/**
- * Runs a block of code internally without registering any reactive dependencies.
- * Used to safeguard logging and internal framework tracking mechanisms.
- */
 function internalUntracked<T>(action: () => T): T
 {
     const prevListener = atlasGlobal.activeListener;
@@ -23,15 +19,12 @@ function internalUntracked<T>(action: () => T): T
     }
 }
 
-/**
- * Creates a reactive state object with fine-grained, property-keyed tracking.
- */
 export function createState<T extends object>(initialState: T): T
 {
     const propertyListenersMap = new Map<string | symbol, Set<Listener>>();
     const instanceListeners = new Set<Listener>();
+    const proxyCache = new WeakMap<object, object>();
 
-    // Shared handler that forwards triggers up to its owners
     const createHandler = (onNotify: () => void): ProxyHandler<object> => {
         return {
             get(target, prop, receiver)
@@ -89,10 +82,15 @@ export function createState<T extends object>(initialState: T): T
 
                 if (value !== null && typeof value === 'object')
                 {
-                    // Recursively wrap children, bubbling their notifications back up here
-                    return new Proxy(value, createHandler(() => {
+                    if (proxyCache.has(value))
+                    {
+                        return proxyCache.get(value)!;
+                    }
+                    const childProxy = new Proxy(value, createHandler(() => {
                         onNotify();
                     }));
+                    proxyCache.set(value, childProxy);
+                    return childProxy;
                 }
 
                 return value;
@@ -112,16 +110,14 @@ export function createState<T extends object>(initialState: T): T
                         logger.debug("Atlas", `State changed: ${String(prop)}`, value);
                     });
 
-
                     const uniqueListeners = new Set<Listener>(instanceListeners);
                     const propertyTargets = propertyListenersMap.get(prop);
                     if (propertyTargets)
                     {
                         propertyTargets.forEach(lnk => uniqueListeners.add(lnk));
                     }
+
                     Array.from(uniqueListeners).forEach(updateFn => updateFn());
-
-
                     onNotify();
                 }
 
@@ -130,7 +126,6 @@ export function createState<T extends object>(initialState: T): T
         };
     };
 
-    // Root node notification trigger
     const rootNotify = () => {
         Array.from(instanceListeners).forEach(updateFn => updateFn());
     };
@@ -138,12 +133,16 @@ export function createState<T extends object>(initialState: T): T
     return new Proxy(initialState, createHandler(rootNotify)) as T;
 }
 
-/**
- * createEffect
- * Creates a persistent side-effect that re-runs whenever its state dependencies change.
- *
- * @param effect - The code to run.
- */
+export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K] }
+{
+    return new Proxy({} as any, {
+        get(_, prop)
+        {
+            return () => proxy[prop as keyof T];
+        }
+    });
+}
+
 export function createEffect(effect: () => void): void
 {
     const runEffect = () => {
@@ -154,50 +153,22 @@ export function createEffect(effect: () => void): void
             atlasGlobal.activeListener = null;
         }
     };
-
     runEffect();
 }
 
-/**
- * createFormula
- * Creates a derived, read-only reactive value.
- */
 export function createFormula<T>(calculation: () => T): () => T
 {
     return () => calculation();
 }
 
-/**
- * createArchive
- * Creates a reactive state that persists in localStorage.
- */
 export function createArchive<T extends object>(key: string, initialState: T): T
 {
     const saved = localStorage.getItem(key);
     const data = saved ? JSON.parse(saved) : initialState;
-
     const state = createState(data);
-
     createEffect(() =>
     {
         localStorage.setItem(key, JSON.stringify(state));
     });
-
     return state;
-}
-/**
- * Converts a reactive object into a plain object where each property
- * is a function pointing back to the original proxy key.
- * This safely permits destructuring without breaking reactivity.
- */
-export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K] }
-{
-    const refs: any = {};
-
-    for (const key in proxy)
-    {
-        refs[key] = () => proxy[key];
-    }
-
-    return refs;
 }
