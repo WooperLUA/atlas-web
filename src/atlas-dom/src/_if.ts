@@ -8,51 +8,27 @@ import type {Children} from "@types";
  * @param {...Children[]} children - Elements to render when the condition is true.
  * @returns {DocumentFragment} A live DOM fragment that handles its own updates.
  */
-export function _If(when: () => boolean, ...children: Children[]): DocumentFragment
-{
+export function _If(when: () => boolean, ...children: Children[]): DocumentFragment {
     const fragment = document.createDocumentFragment();
     const marker = document.createComment("atlas-if");
     fragment.appendChild(marker);
 
     let currentNodes: Node[] = [];
 
-    const update = () =>
-    {
-
+    const update = () => {
         currentNodes.forEach(node => node.parentNode?.removeChild(node));
-
-
-        if (when())
-        {
+        if (when()) {
             const nextContent = _Structure(...children);
             currentNodes = Array.from(nextContent.childNodes);
-
             marker.parentNode?.insertBefore(nextContent, marker);
-        }
-        else
-        {
+        } else {
             currentNodes = [];
         }
     };
 
-    const globalContext = (window as any)._atlas;
-
-    if (globalContext)
-    {
-        globalContext.activeListener = update;
-    }
-
-    try
-    {
-        update();
-    }
-    finally
-    {
-        if (globalContext)
-        {
-            globalContext.activeListener = null;
-        }
-    }
+    (window as any)._atlas.activeListener = update;
+    update();
+    (window as any)._atlas.activeListener = null;
 
     return fragment;
 }
