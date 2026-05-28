@@ -1,36 +1,64 @@
-import {_Structure} from '@atlas-dom';
+import {_Structure} from "@atlas-dom";
 import type {Children} from "@types";
 
-export function _If(when: () => boolean, ...children: (Children | (() => Children))[]): DocumentFragment {
+export function _If(
+    when: () => boolean,
+    ...children: (Children | (() => Children))[]
+): DocumentFragment
+{
     const fragment = document.createDocumentFragment();
     const marker = document.createComment("atlas-if");
     fragment.appendChild(marker);
+
     let currentNodes: Node[] = [];
 
-    const update = () => {
-        currentNodes.forEach(node => node.parentNode?.removeChild(node));
+    const update = () =>
+    {
 
-        if (when()) {
-            const prevListener = (window as any)._atlas?.activeListener;
-            (window as any)._atlas.activeListener = () => {};
+        currentNodes.forEach((node) =>
+        {
+            node.parentNode?.removeChild(node);
+        });
 
-            const evaluatedChildren = children.map(child =>
-                typeof child === 'function' ? child() : child
-            );
+        if (when())
+        {
+            const globalContext = (window as any)._atlas;
 
-            const nextContent = _Structure(...evaluatedChildren);
+            globalContext.listenerStack.push(() =>
+            {
+            });
 
-            (window as any)._atlas.activeListener = prevListener;
+            try
+            {
+                const evaluatedChildren = children.map((child) =>
+                    typeof child === "function" ? child() : child
+                );
 
-            currentNodes = Array.from(nextContent.childNodes);
-            marker.parentNode?.insertBefore(nextContent, marker);
-        } else {
+                const nextContent = _Structure(...evaluatedChildren);
+                currentNodes = Array.from(nextContent.childNodes);
+                marker.parentNode?.insertBefore(nextContent, marker);
+            }
+            finally
+            {
+                globalContext.listenerStack.pop();
+            }
+        }
+        else
+        {
             currentNodes = [];
         }
     };
 
-    (window as any)._atlas.activeListener = update;
-    update();
-    (window as any)._atlas.activeListener = null;
+    const globalContext = (window as any)._atlas;
+    globalContext.listenerStack.push(update);
+    try
+    {
+        update();
+    }
+    finally
+    {
+        globalContext.listenerStack.pop();
+    }
+
     return fragment;
 }

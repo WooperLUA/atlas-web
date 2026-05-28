@@ -36,19 +36,20 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
         state.loading = true;
         try
         {
-            if (typeof request === 'function')
-            {
+            if (typeof request === 'function') {
                 state.data = await request();
-            }
-            else
-            {
+            } else {
                 const response = await fetch(request, options);
                 state.status = response.status;
 
-                if (!response.ok) logger.error("Atlas-Query", `Fetch error: ${response.statusText}`)
-                state.data = await response.json();
+                if (!response.ok) {
+                    logger.error("Atlas-Query", `Fetch error: ${response.statusText}`);
+                    state.error = new Error(`HTTP Error ${response.status}`);
+                } else {
+                    state.data = await response.json();
+                    state.error = null;
+                }
             }
-            state.error = null;
         }
         catch (err)
         {

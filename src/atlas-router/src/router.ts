@@ -9,6 +9,7 @@ export class Router
     private routes: Route[];
     private root: HTMLElement;
     private basePath: string;
+    private currentViewNode: Node | null = null;
 
     /**
      * Initializes a new Router instance.
@@ -37,10 +38,12 @@ export class Router
      * Sets up global event listeners for navigation.
      * @private
      */
-    private init(): void {
+    private init(): void
+    {
         window.addEventListener("popstate", () => this.render());
 
-        document.addEventListener("click", (e: MouseEvent) => {
+        document.addEventListener("click", (e: MouseEvent) =>
+        {
             const anchor = (e.target as HTMLElement).closest("a");
 
             if (!anchor || anchor.target === "_blank") return;
@@ -63,7 +66,8 @@ export class Router
     public navigate(path: string): void
     {
         let fullPath = path;
-        if (this.basePath && !path.startsWith(this.basePath)) {
+        if (this.basePath && !path.startsWith(this.basePath))
+        {
             const cleanPath = path.startsWith('/') ? path : '/' + path;
             fullPath = `${this.basePath}${cleanPath}`;
         }
@@ -90,7 +94,8 @@ export class Router
             const pathDefinitions = Array.isArray(r.path) ? r.path : [r.path];
 
             // Look for any path pattern that matches the current URL path
-            return pathDefinitions.some(pathDef => {
+            return pathDefinitions.some(pathDef =>
+            {
                 const fullDef = `${this.basePath}${pathDef.startsWith('/') ? pathDef : '/' + pathDef}`;
 
                 const paramNames: string[] = [];
@@ -122,27 +127,44 @@ export class Router
         {
             const view = route.view(params);
 
-            this.root.innerHTML = '';
+            if (this.currentViewNode && this.currentViewNode.parentNode)
+            {
+                this.currentViewNode.parentNode.removeChild(this.currentViewNode);
+            }
 
-            if (typeof view === 'string') {
-                this.root.innerHTML = view;
+            let newNode: Node | null = null;
+
+            if (typeof view === 'string')
+            {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = view;
+                newNode = wrapper;
             }
-            else if (Array.isArray(view)) {
-                view.forEach(node => {
-                    if (node instanceof Node) {
-                        this.root.appendChild(node);
-                    }
-                });
+            else if (view instanceof DocumentFragment)
+            {
+
+                const wrapper = document.createElement('div');
+                wrapper.appendChild(view);
+                newNode = wrapper;
             }
-            else if (view instanceof DocumentFragment) {
-                this.root.appendChild(view);
+            else if (view instanceof Node)
+            {
+                newNode = view;
             }
-            else if (view instanceof Node) {
-                this.root.appendChild(view);
+
+            if (newNode)
+            {
+                this.root.appendChild(newNode);
+                this.currentViewNode = newNode;
             }
         }
         else
         {
+            if (this.currentViewNode && this.currentViewNode.parentNode)
+            {
+                this.currentViewNode.parentNode.removeChild(this.currentViewNode);
+            }
+            this.currentViewNode = null;
             this.root.innerHTML = "404 - Not Found";
         }
     }

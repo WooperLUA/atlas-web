@@ -52,30 +52,20 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
                 {
                     (element as any)[key] = freshValue;
                 }
-
-                if ((element as any)._atlas_onUpdate)
-                {
-                    (element as any)._atlas_onUpdate(element);
-                }
+                if ((element as any)._atlas_onUpdate) (element as any)._atlas_onUpdate(element);
             };
 
             const globalContext = (window as any)._atlas;
-            const prevListener = globalContext?.activeListener;
-            const prevRegister = globalContext?.registerUnsubscribe;
 
-            if (globalContext) {
-                globalContext.activeListener = update;
-                globalContext.registerUnsubscribe = (cleanupFn: () => void) => {
-                    (element as any)._atlas_cleanups.push(cleanupFn);
-                };
-            }
-            try {
+            if (globalContext) globalContext.listenerStack.push(update);
+
+            try
+            {
                 update();
-            } finally {
-                if (globalContext) {
-                    globalContext.activeListener = prevListener;
-                    globalContext.registerUnsubscribe = prevRegister;
-                }
+            }
+            finally
+            {
+                if (globalContext) globalContext.listenerStack.pop();
             }
         }
         else
@@ -104,8 +94,9 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
 
     children.flat().forEach(child =>
     {
-        if (child instanceof HTMLElement && !(child as any)._atlas_onMount) {
-            logger.warn('Atlas-Dom','You are appending a raw HTMLElement. Please use Atlas factory functions instead.' )
+        if (child instanceof HTMLElement && !(child as any)._atlas_onMount)
+        {
+            logger.warn('Atlas-Dom', 'You are appending a raw HTMLElement. Please use Atlas factory functions instead.')
         }
 
         if (child instanceof Node)

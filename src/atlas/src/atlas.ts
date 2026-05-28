@@ -1,6 +1,10 @@
 export type Listener = () => void;
 
-const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = { activeListener: null, registerUnsubscribe: null });
+const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = {
+    activeListener: null, // Keep for backwards compat if needed
+    listenerStack: [],
+    registerUnsubscribe: null
+});
 
 const pendingUpdates = new Set<Listener>();
 let isTicking = false;
@@ -25,9 +29,11 @@ export function createState<T extends object>(initialState: T): T {
 
     const createHandler = (): ProxyHandler<object> => ({
         get(target, prop, receiver) {
-            if (atlasGlobal.activeListener) {
-                const currentListener = atlasGlobal.activeListener;
+            const currentListener = atlasGlobal.listenerStack.length > 0
+                ? atlasGlobal.listenerStack[atlasGlobal.listenerStack.length - 1]
+                : null;
 
+            if (currentListener) {
                 let depsMap = targetMap.get(target);
                 if (!depsMap) {
                     depsMap = new Map();
