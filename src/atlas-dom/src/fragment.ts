@@ -60,21 +60,22 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
             };
 
             const globalContext = (window as any)._atlas;
+            const prevListener = globalContext?.activeListener;
+            const prevRegister = globalContext?.registerUnsubscribe;
+
             if (globalContext) {
                 globalContext.activeListener = update;
                 globalContext.registerUnsubscribe = (cleanupFn: () => void) => {
                     (element as any)._atlas_cleanups.push(cleanupFn);
                 };
             }
-
-
-            try
-            {
+            try {
                 update();
-            }
-            finally
-            {
-                if (globalContext) globalContext.activeListener = null;
+            } finally {
+                if (globalContext) {
+                    globalContext.activeListener = prevListener;
+                    globalContext.registerUnsubscribe = prevRegister;
+                }
             }
         }
         else

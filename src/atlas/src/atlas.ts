@@ -2,7 +2,6 @@ export type Listener = () => void;
 
 const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = { activeListener: null, registerUnsubscribe: null });
 
-// Microtask batching queue
 const pendingUpdates = new Set<Listener>();
 let isTicking = false;
 
@@ -19,22 +18,36 @@ function queueUpdate(fn: Listener) {
     }
 }
 
+const targetMap = new WeakMap<object, Map<string | symbol, Set<Listener>>>();
+
 export function createState<T extends object>(initialState: T): T {
-    const propertyListenersMap = new Map<string | symbol, Set<Listener>>();
     const proxyCache = new WeakMap<object, object>();
 
     const createHandler = (): ProxyHandler<object> => ({
         get(target, prop, receiver) {
             if (atlasGlobal.activeListener) {
                 const currentListener = atlasGlobal.activeListener;
-                if (!propertyListenersMap.has(prop)) propertyListenersMap.set(prop, new Set());
-                propertyListenersMap.get(prop)!.add(currentListener);
+
+                let depsMap = targetMap.get(target);
+                if (!depsMap) {
+                    depsMap = new Map();
+                    targetMap.set(target, depsMap);
+                }
+
+                let listeners = depsMap.get(prop);
+                if (!listeners) {
+                    listeners = new Set();
+                    depsMap.set(prop, listeners);
+                }
+
+                listeners.add(currentListener);
 
                 if (atlasGlobal.registerUnsubscribe) {
-                    atlasGlobal.registerUnsubscribe(() => propertyListenersMap.get(prop)?.delete(currentListener));
+                    atlasGlobal.registerUnsubscribe(() => {
+                        targetMap.get(target)?.get(prop)?.delete(currentListener);
+                    });
                 }
             }
-
             const value = Reflect.get(target, prop, receiver);
             if (value !== null && typeof value === 'object') {
                 if (proxyCache.has(value)) return proxyCache.get(value)!;
@@ -48,8 +61,10 @@ export function createState<T extends object>(initialState: T): T {
             if (Reflect.get(target, prop, receiver) === value) return true;
             const success = Reflect.set(target, prop, value, receiver);
             if (success) {
-                const targets = propertyListenersMap.get(prop);
-                if (targets) targets.forEach(fn => queueUpdate(fn));
+                const listeners = targetMap.get(target)?.get(prop);
+                if (listeners) {
+                    listeners.forEach(fn => queueUpdate(fn));
+                }
             }
             return success;
         }
@@ -68,11 +83,12 @@ export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K
 
 export function createEffect(effect: () => void): void {
     const runEffect = () => {
+        const prevListener = atlasGlobal.activeListener;
         atlasGlobal.activeListener = runEffect;
         try {
             effect();
         } finally {
-            atlasGlobal.activeListener = null;
+            atlasGlobal.activeListener = prevListener;
         }
     };
     runEffect();
