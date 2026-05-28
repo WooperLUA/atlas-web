@@ -94,11 +94,6 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
 
     children.flat().forEach(child =>
     {
-        if (child instanceof HTMLElement && !(child as any)._atlas_onMount)
-        {
-            logger.warn('Atlas-Dom', 'You are appending a raw HTMLElement. Please use Atlas factory functions instead.')
-        }
-
         if (child instanceof Node)
         {
             element.appendChild(child);

@@ -1,7 +1,9 @@
+import {logger} from "@services";
+
 export type Listener = () => void;
 
 const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = {
-    activeListener: null, // Keep for backwards compat if needed
+    activeListener: null,
     listenerStack: [],
     registerUnsubscribe: null
 });
@@ -54,6 +56,7 @@ export function createState<T extends object>(initialState: T): T {
                     });
                 }
             }
+
             const value = Reflect.get(target, prop, receiver);
             if (value !== null && typeof value === 'object') {
                 if (proxyCache.has(value)) return proxyCache.get(value)!;
@@ -89,12 +92,12 @@ export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K
 
 export function createEffect(effect: () => void): void {
     const runEffect = () => {
-        const prevListener = atlasGlobal.activeListener;
-        atlasGlobal.activeListener = runEffect;
+        const globalContext = (window as any)._atlas;
+        globalContext.listenerStack.push(runEffect);
         try {
             effect();
         } finally {
-            atlasGlobal.activeListener = prevListener;
+            globalContext.listenerStack.pop();
         }
     };
     runEffect();
@@ -105,11 +108,40 @@ export function createFormula<T>(calculation: () => T): () => T {
 }
 
 export function createArchive<T extends object>(key: string, initialState: T): T {
-    const saved = localStorage.getItem(key);
-    const data = saved ? JSON.parse(saved) : initialState;
+    let data: T = initialState;
+    try {
+        const saved = localStorage.getItem(key);
+        if (saved) data = JSON.parse(saved);
+    } catch (e) {
+        logger.warn('Atlas', `Failed to parse localStorage key "${key}". Using initial state.`)
+    }
+
     const state = createState(data);
     createEffect(() => {
-        localStorage.setItem(key, JSON.stringify(state));
+        try {
+            localStorage.setItem(key, JSON.stringify(state));
+        } catch (e) {
+            logger.error('Atlas','Failed to save state to localStorage',e)
+        }
     });
+
     return state;
+}
+
+
+const registry = new Map<string, object>();
+
+export function createContext<T extends object>(name: string, initialState: T): T {
+    if (!registry.has(name)) {
+        registry.set(name, createState(initialState));
+    }
+    return registry.get(name) as T;
+}
+
+export function getContext<T extends object>(name: string): T {
+    const ctx = registry.get(name);
+    if (!ctx) {
+        logger.error('Atlas',`${name}" not initialized. Call createContext("${name}", ...) first.`)
+    }
+    return ctx as T;
 }

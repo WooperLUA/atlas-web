@@ -38,6 +38,7 @@ export function _Loop<T>(
             });
 
             currentNodes = [];
+
             itemsAndKeys.forEach(({ item, key }) => {
                 let node = keyMap.get(key);
                 if (!node) {
@@ -47,7 +48,6 @@ export function _Loop<T>(
                     node = structure.childNodes.length === 1 ? structure.firstChild! : structure;
                     keyMap.set(key, node);
                 }
-
                 parent.appendChild(node);
                 currentNodes.push(node);
             });
@@ -59,7 +59,6 @@ export function _Loop<T>(
             currentItems.length = newItems.length;
             currentNodes.length = newItems.length;
 
-
             for (let i = 0; i < newItems.length; i++) {
                 const newItem = newItems[i]!;
                 if (currentItems[i] !== newItem) {
@@ -69,9 +68,7 @@ export function _Loop<T>(
                     const indexGetter = () => i;
                     const rendered = renderer(newItem, indexGetter);
                     const structure = _Structure(rendered);
-                    const newNode =
-                        structure.childNodes.length === 1 ? structure.firstChild! : structure;
-
+                    const newNode = structure.childNodes.length === 1 ? structure.firstChild! : structure;
 
                     parent.insertBefore(newNode, currentNodes[i + 1] || marker);
 
@@ -84,11 +81,7 @@ export function _Loop<T>(
 
     const globalContext = (window as any)._atlas;
     globalContext.listenerStack.push(update);
-    try {
-        update();
-    } finally {
-        globalContext.listenerStack.pop();
-    }
+    try { update(); } finally { globalContext.listenerStack.pop(); }
 
     return fragment;
 }
