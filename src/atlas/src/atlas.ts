@@ -131,17 +131,17 @@ export function createArchive<T extends object>(key: string, initialState: T): T
 
 const registry = new Map<string, object>();
 
-export function createContext<T extends object>(name: string, initialState: T): T {
+export function createFlow<T extends object>(name: string, initialState: T): T {
     if (!registry.has(name)) {
         registry.set(name, createState(initialState));
     }
     return registry.get(name) as T;
 }
 
-export function getContext<T extends object>(name: string): T {
+export function getFlow<T extends object>(name: string): T {
     const ctx = registry.get(name);
     if (!ctx) {
-        logger.error('Atlas',`${name}" not initialized. Call createContext("${name}", ...) first.`)
+        logger.error('Atlas',`${name}" not initialized. Call createFlow("${name}", ...) first.`)
     }
     return ctx as T;
 }
