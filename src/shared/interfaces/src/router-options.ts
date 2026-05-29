@@ -1,13 +1,13 @@
 import type {Route} from "./route.ts";
 
 /**
- * Configuration options for the Atlas Router.
+ * Configuration for the client-side router.
  */
-export interface RouterOptions
-{
-    /** The ID of the HTML element where the router will render views. */
+export interface RouterOptions {
+    /** ID of the root container element. */
     rootId: string;
-    /** The list of defined routes. */
+    /** Route definitions array. */
     routes: Route[];
+    /** Optional base path for subdomain/spa deployments. */
     basePath?: string;
 }

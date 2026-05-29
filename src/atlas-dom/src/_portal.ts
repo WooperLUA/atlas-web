@@ -1,3 +1,11 @@
+/**
+ * Teleports an element to a different DOM subtree.
+ * Automatically removes the element when the parent unmounts.
+ *
+ * @param element - The DOM node to teleport.
+ * @param target - CSS selector or HTMLElement destination (default: `document.body`).
+ * @returns Comment placeholder preserving original tree position.
+ */
 export function _Portal(element: HTMLElement, target: HTMLElement | string = document.body): Comment {
     const targetEl = target instanceof HTMLElement
         ? target

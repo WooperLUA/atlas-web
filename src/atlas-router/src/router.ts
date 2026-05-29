@@ -2,7 +2,9 @@ import type {Route, RouterOptions} from "@interfaces";
 import {logger} from "@services";
 
 /**
- * Manages client-side routing and view rendering.
+ * Manages SPA navigation, route matching, and view rendering.
+ * Automatically intercepts `<a>` clicks and handles `popstate`.
+ * Uses safe DOM swapping to preserve lifecycle and prevent layout thrashing.
  */
 export class Router
 {
@@ -12,10 +14,9 @@ export class Router
     private currentViewNode: Node | null = null;
 
     /**
-     * Initializes a new Router instance.
-     *
-     * @param {RouterOptions} config - Configuration options including routes and root element ID.
-     * @throws {Error} If the root element is not found.
+     * Initializes the router instance.
+     * @param config - Router configuration options.
+     * @throws Error if `rootId` element is not found in DOM.
      */
     constructor(config: RouterOptions)
     {
@@ -59,9 +60,8 @@ export class Router
     }
 
     /**
-     * Navigates to a new path and updates the browser history.
-     *
-     * @param {string} path - The destination path.
+     * Programmatically navigates to a path and updates browser history.
+     * @param path - Target route path (e.g., `/dashboard`).
      */
     public navigate(path: string): void
     {
@@ -79,8 +79,8 @@ export class Router
     }
 
     /**
-     * Renders the view corresponding to the current path.
-     * Handles parameter extraction and element composition.
+     * Renders the view matching the current URL.
+     * Called automatically on init, navigation, and back/forward.
      */
     public render(): void
     {

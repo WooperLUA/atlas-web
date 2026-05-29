@@ -2,25 +2,13 @@ import {createState} from '@atlas';
 import {logger} from "@services";
 
 /**
- * Reactive wrapper for the native Fetch API.
+ * Reactive wrapper around the Fetch API.
+ * Automatically executes on creation and exposes loading/error/data state.
  *
- * This function initializes a reactive state object that tracks the progress
- * and result of an asynchronous request. It integrates directly with the
- * Atlas reactivity system, triggering UI updates automatically when data,
- * loading status, or errors change.
- *
- * @template T - The expected shape of the response data.
- *
- * @param {RequestInfo | (() => Promise<T>)} request - The network request to perform.
- * Can be a URL string, a Request object, or a custom async function that returns a Promise.
- *
- * @param {RequestInit} [options={}] - Standard fetch configuration options (method, headers, body, etc.).
- * Only used if `request` is a URL or Request object.
- *
- * @returns {Object} An object containing:
- * - `state`: A reactive Atlas state containing `data`, `error`, `loading`, and `status`.
- * - `refresh`: A function to manually re-trigger the asynchronous operation.
- *
+ * @template T - Expected response shape.
+ * @param request - URL, Request object, or async resolver function.
+ * @param options - Standard fetch init options (ignored if request is a function).
+ * @returns `{ state: ReactiveFetchState<T>, refresh: () => Promise<void> }`
  */
 export function createFetch<T>(request: RequestInfo | (() => Promise<T>), options: RequestInit = {})
 {
@@ -71,13 +59,13 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
 }
 
 /**
- * Reactive wrapper for manual asynchronous actions (POST, PUT, DELETE).
+ * Reactive wrapper for manual async mutations (POST/PUT/DELETE).
+ * Does not execute automatically. Trigger via `execute()`.
  *
- * Unlike createFetch, mutations do not run automatically and are triggered by
- * calling the returned `execute` function.
- *
- * @template T - The expected shape of the response data.
- * @template V - The type of variables/arguments passed to the mutation.
+ * @template T - Response shape.
+ * @template V - Variables passed to mutation function.
+ * @param mutationFn - Async function accepting variables and returning Promise<T>.
+ * @returns `{ state: ReactiveMutationState<T>, execute: (vars: V) => Promise<void> }`
  */
 export function createMutation<T, V = void>(mutationFn: (variables: V) => Promise<T>)
 {

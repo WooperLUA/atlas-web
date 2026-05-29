@@ -14,6 +14,18 @@ function applyStyle(element: HTMLElement, style: any)
     }
 }
 
+/**
+ * Base DOM factory for HTML/SVG elements.
+ * Tag-specific exports (Div, H1, Input, etc.) are generated via proxy.
+ *
+ * @param traits - Reactive attributes, events, lifecycle hooks, and styles.
+ * @param children - Nested nodes, strings, numbers, or reactive components.
+ * @returns HTMLElement | SVGElement
+ * @remarks
+ * - Functions in traits are treated as reactive bindings.
+ * - Events use `on<EventName>` (e.g., `onClick`, `onInput`).
+ * - Lifecycle: `onMount`, `onUnmount`, `onUpdate` receive the element.
+ */
 export function Fragment(tag: string, traits: any = {}, ...children: Children[]): AtlasNode<any>
 {
     const svgTags = [

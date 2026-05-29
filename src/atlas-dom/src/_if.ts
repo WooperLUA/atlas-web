@@ -1,6 +1,14 @@
 import {_Structure} from "@atlas-dom";
 import type {Children} from "@types";
 
+/**
+ * Conditionally renders children based on a reactive boolean.
+ * Automatically handles mounting/unmounting and cleanup registration.
+ *
+ * @param when - Reactive predicate `() => boolean`.
+ * @param children - Nodes or factories to render when truthy.
+ * @returns DocumentFragment with conditional subtree.
+ */
 export function _If(when: () => boolean, ...children: (Children | (() => Children))[]): DocumentFragment {
     const fragment = document.createDocumentFragment();
     const marker = document.createComment("atlas-if");

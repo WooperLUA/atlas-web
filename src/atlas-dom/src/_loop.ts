@@ -1,5 +1,15 @@
 import { _Structure } from "@/atlas-dom";
 
+/**
+ * Renders a list of items reactively.
+ * Supports keyed reconciliation for focus/state preservation.
+ *
+ * @template T - Item type in the data source.
+ * @param dataSource - Reactive getter returning the array.
+ * @param renderer - Function returning a DOM node for each item.
+ * @param getKey - Optional stable key extractor for O(1) reconciliation.
+ * @returns DocumentFragment containing list nodes.
+ */
 export function _Loop<T>(
     dataSource: () => T[],
     renderer: (item: T, index: () => number) => any,

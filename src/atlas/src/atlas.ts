@@ -26,6 +26,16 @@ function queueUpdate(fn: Listener) {
 
 const targetMap = new WeakMap<object, Map<string | symbol, Set<Listener>>>();
 
+/**
+ * Creates a fine-grained reactive state proxy.
+ * Dependencies are tracked automatically when properties are accessed
+ * inside reactive contexts (traits, effects, formulas).
+ * Mutations trigger batched DOM updates via microtask queue.
+ *
+ * @template T - Must be an object. Arrays/strings must be wrapped in an object.
+ * @param initialState - The initial value of the reactive state.
+ * @returns A Proxy that intercepts property access and mutations.
+ */
 export function createState<T extends object>(initialState: T): T {
     const proxyCache = new WeakMap<object, object>();
 
@@ -82,6 +92,14 @@ export function createState<T extends object>(initialState: T): T {
     return new Proxy(initialState, createHandler()) as T;
 }
 
+/**
+ * Extracts reactive getter functions from a state proxy.
+ * Useful for passing reactive values into DOM traits without creating inline closures.
+ *
+ * @template T - Shape of the state object.
+ * @param proxy - The reactive state proxy returned by `createState`.
+ * @returns An object where each key maps to a `() => T[K]` getter.
+ */
 export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K] } {
     return new Proxy({} as any, {
         get(_, prop) {
@@ -90,6 +108,13 @@ export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K
     });
 }
 
+/**
+ * Executes a callback immediately and schedules it to re-run
+ * when any accessed reactive state changes.
+ * Automatically tracks dependencies and unsubscribes on cleanup.
+ *
+ * @param effect - The side-effect function to execute.
+ */
 export function createEffect(effect: () => void): void {
     const runEffect = () => {
         const globalContext = (window as any)._atlas;
@@ -103,10 +128,28 @@ export function createEffect(effect: () => void): void {
     runEffect();
 }
 
+/**
+ * Creates a derived value getter that recalculates only when
+ * its tracked dependencies change. Returns a cached result until stale.
+ *
+ * @template T - Return type of the calculation.
+ * @param calculation - Function that computes the derived value.
+ * @returns A reactive getter `() => T`.
+ */
 export function createFormula<T>(calculation: () => T): () => T {
     return () => calculation();
 }
 
+/**
+ * Creates a reactive state that automatically syncs with `localStorage`.
+ * Hydrates on initialization, persists on mutation, and falls back gracefully
+ * in restricted environments (private browsing, SSR).
+ *
+ * @template T - Must be an object.
+ * @param key - Unique `localStorage` key for persistence.
+ * @param initialState - Fallback value if no stored data exists.
+ * @returns A reactive state proxy synced to storage.
+ */
 export function createArchive<T extends object>(key: string, initialState: T): T {
     let data: T = initialState;
     try {
