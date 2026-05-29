@@ -1,7 +1,8 @@
-import {logger} from "@services";
+import { logger } from "@services";
 
 export type Listener = () => void;
 
+// Global Atlas context for reactivity tracking
 const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = {
     activeListener: null,
     listenerStack: [],
@@ -26,13 +27,14 @@ function queueUpdate(fn: Listener) {
 
 const targetMap = new WeakMap<object, Map<string | symbol, Set<Listener>>>();
 
+const registry = new Map<string, object>();
+
 /**
  * Creates a fine-grained reactive state proxy.
  * Dependencies are tracked automatically when properties are accessed
- * inside reactive contexts (traits, effects, formulas).
- * Mutations trigger batched DOM updates via microtask queue.
+ * inside reactive contexts (DOM traits, effects, formulas).
  *
- * @template T - Must be an object. Arrays/strings must be wrapped in an object.
+ * @template T - Must be an object. Wrap arrays/primitives: `createState({ items: [] })`
  * @param initialState - The initial value of the reactive state.
  * @returns A Proxy that intercepts property access and mutations.
  */
@@ -43,7 +45,7 @@ export function createState<T extends object>(initialState: T): T {
         get(target, prop, receiver) {
             const currentListener = atlasGlobal.listenerStack.length > 0
                 ? atlasGlobal.listenerStack[atlasGlobal.listenerStack.length - 1]
-                : null;
+                : atlasGlobal.activeListener;
 
             if (currentListener) {
                 let depsMap = targetMap.get(target);
@@ -68,6 +70,7 @@ export function createState<T extends object>(initialState: T): T {
             }
 
             const value = Reflect.get(target, prop, receiver);
+
             if (value !== null && typeof value === 'object') {
                 if (proxyCache.has(value)) return proxyCache.get(value)!;
                 const childProxy = new Proxy(value, createHandler());
@@ -78,7 +81,9 @@ export function createState<T extends object>(initialState: T): T {
         },
         set(target, prop, value, receiver) {
             if (Reflect.get(target, prop, receiver) === value) return true;
+
             const success = Reflect.set(target, prop, value, receiver);
+
             if (success) {
                 const listeners = targetMap.get(target)?.get(prop);
                 if (listeners) {
@@ -93,16 +98,15 @@ export function createState<T extends object>(initialState: T): T {
 }
 
 /**
- * Extracts reactive getter functions from a state proxy.
- * Useful for passing reactive values into DOM traits without creating inline closures.
+ * Extracts reactive getter functions from a state proxy for easy destructuring.
  *
  * @template T - Shape of the state object.
  * @param proxy - The reactive state proxy returned by `createState`.
- * @returns An object where each key maps to a `() => T[K]` getter.
+ * @returns An object where each key maps to a `() => T[K]` reactive getter.
  */
 export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K] } {
     return new Proxy({} as any, {
-        get(_, prop) {
+        get(_, prop: string | symbol) {
             return () => proxy[prop as keyof T];
         }
     });
@@ -111,18 +115,16 @@ export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K
 /**
  * Executes a callback immediately and schedules it to re-run
  * when any accessed reactive state changes.
- * Automatically tracks dependencies and unsubscribes on cleanup.
  *
  * @param effect - The side-effect function to execute.
  */
 export function createEffect(effect: () => void): void {
     const runEffect = () => {
-        const globalContext = (window as any)._atlas;
-        globalContext.listenerStack.push(runEffect);
+        atlasGlobal.listenerStack.push(runEffect);
         try {
             effect();
         } finally {
-            globalContext.listenerStack.pop();
+            atlasGlobal.listenerStack.pop();
         }
     };
     runEffect();
@@ -130,7 +132,7 @@ export function createEffect(effect: () => void): void {
 
 /**
  * Creates a derived value getter that recalculates only when
- * its tracked dependencies change. Returns a cached result until stale.
+ * its tracked dependencies change.
  *
  * @template T - Return type of the calculation.
  * @param calculation - Function that computes the derived value.
@@ -142,8 +144,7 @@ export function createFormula<T>(calculation: () => T): () => T {
 
 /**
  * Creates a reactive state that automatically syncs with `localStorage`.
- * Hydrates on initialization, persists on mutation, and falls back gracefully
- * in restricted environments (private browsing, SSR).
+ * Acts as a singleton: calling this multiple times with the same key returns the same instance.
  *
  * @template T - Must be an object.
  * @param key - Unique `localStorage` key for persistence.
@@ -151,29 +152,41 @@ export function createFormula<T>(calculation: () => T): () => T {
  * @returns A reactive state proxy synced to storage.
  */
 export function createArchive<T extends object>(key: string, initialState: T): T {
+    if (registry.has(key)) {
+        return registry.get(key) as T;
+    }
+
     let data: T = initialState;
     try {
         const saved = localStorage.getItem(key);
         if (saved) data = JSON.parse(saved);
     } catch (e) {
-        logger.warn('Atlas', `Failed to parse localStorage key "${key}". Using initial state.`)
+        logger.warn('Atlas', `Failed to parse localStorage key "${key}". Using initial state.`);
     }
 
     const state = createState(data);
+
     createEffect(() => {
         try {
             localStorage.setItem(key, JSON.stringify(state));
         } catch (e) {
-            logger.error('Atlas','Failed to save state to localStorage',e)
+            logger.error('Atlas', 'Failed to save state to localStorage', e);
         }
     });
 
+    registry.set(key, state);
     return state;
 }
 
-
-const registry = new Map<string, object>();
-
+/**
+ * Creates a global reactive flow (non-persistent shared state).
+ * Shares the same registry as createArchive for consistency.
+ *
+ * @template T - Must be an object.
+ * @param name - Unique name for this flow.
+ * @param initialState - Initial value for the flow.
+ * @returns A shared reactive state proxy.
+ */
 export function createFlow<T extends object>(name: string, initialState: T): T {
     if (!registry.has(name)) {
         registry.set(name, createState(initialState));
@@ -181,10 +194,17 @@ export function createFlow<T extends object>(name: string, initialState: T): T {
     return registry.get(name) as T;
 }
 
+/**
+ * Retrieves an existing global state by name. Throws if not initialized.
+ *
+ * @template T - Shape of the state object.
+ * @param name - Name of the flow to retrieve.
+ * @returns The shared reactive state proxy.
+ */
 export function getFlow<T extends object>(name: string): T {
     const ctx = registry.get(name);
     if (!ctx) {
-        logger.error('Atlas',`${name}" not initialized. Call createFlow("${name}", ...) first.`)
+        logger.error('Atlas', `Flow "${name}" not initialized.`);
     }
     return ctx as T;
 }
