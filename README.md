@@ -15,7 +15,14 @@ Atlas is a lightweight, modular, and reactive TypeScript framework for building 
 
 # 📦 Installation
 
+```
 npm install atlas-web
+```
+
+# 🔧 Project setup
+```
+npx create-atlas-web-app 
+```
 
 # 📖 Documentation
 
