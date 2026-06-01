@@ -7,6 +7,7 @@ export default defineConfig({
         lib: {
             entry: {
                 atlas: path.resolve(__dirname, 'src/atlas/index.ts'),
+                'atlas-devtools': path.resolve(__dirname, 'src/atlas-devtools/index.ts'),
                 'atlas-dom': path.resolve(__dirname, 'src/atlas-dom/index.ts'),
                 'atlas-router': path.resolve(__dirname, 'src/atlas-router/index.ts'),
                 "atlas-query": path.resolve(__dirname, "./src/atlas-query/index.ts"),
@@ -27,6 +28,7 @@ export default defineConfig({
         alias: {
             "@": path.resolve(__dirname, "./src"),
             "@atlas": path.resolve(__dirname, "./src/atlas/index.ts"),
+            "@atlas-devtools": path.resolve(__dirname, "./src/atlas-devtools/index.ts"),
             "@atlas-dom": path.resolve(__dirname, "./src/atlas-dom/index.ts"),
             "@atlas-router": path.resolve(__dirname, "./src/atlas-router/index.ts"),
             "@atlas-query": path.resolve(__dirname, "./src/atlas-query/index.ts"),

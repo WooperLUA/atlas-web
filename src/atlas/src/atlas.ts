@@ -1,12 +1,49 @@
-import { logger } from "@services";
+import {logger} from "@services";
 
 export type Listener = () => void;
 
-// Global Atlas context for reactivity tracking
+interface DevtoolLog {
+    time: number;
+    stateName: string;
+    prop: string | symbol;
+    oldValue: any;
+    newValue: any;
+}
+
+function getSourceLocation(): string {
+    try {
+        const stack = new Error().stack;
+        if (!stack) return 'Unknown';
+        const lines = stack.split('\n');
+
+        let targetIndex = 3;
+        for (let i = 2; i < lines.length; i++) {
+            if (!lines[i]?.includes('createState') &&
+                !lines[i]?.includes('createArchive') &&
+                !lines[i]?.includes('createFlow') &&
+                !lines[i]?.includes('getSourceLocation')) {
+                targetIndex = i;
+                break;
+            }
+        }
+
+        const callerLine = lines[targetIndex] || '';
+        const match = callerLine.match(/([^\/\\]+\.[tj]sx?):(\d+):\d+/);
+        return match ? `${match[1]}:${match[2]}` : 'Unknown';
+    } catch {
+        return 'Unknown';
+    }
+}
+
 const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = {
     activeListener: null,
     listenerStack: [],
-    registerUnsubscribe: null
+    registerUnsubscribe: null,
+    devtools: null as {
+        logs: DevtoolLog[];
+        states: Set<object>;
+        onUpdate: (() => void) | null;
+    } | null
 });
 
 const pendingUpdates = new Set<Listener>();
@@ -26,7 +63,6 @@ function queueUpdate(fn: Listener) {
 }
 
 const targetMap = new WeakMap<object, Map<string | symbol, Set<Listener>>>();
-
 const registry = new Map<string, object>();
 
 /**
@@ -38,8 +74,18 @@ const registry = new Map<string, object>();
  * @param initialState - The initial value of the reactive state.
  * @returns A Proxy that intercepts property access and mutations.
  */
-export function createState<T extends object>(initialState: T): T {
+export function createState<T extends object>(initialState: T, fallbackName?: string): T {
     const proxyCache = new WeakMap<object, object>();
+
+    const stateId = fallbackName || getSourceLocation();
+
+    if (!(initialState as any).__atlas_name) {
+        (initialState as any).__atlas_name = stateId;
+    }
+
+    if (atlasGlobal.devtools) {
+        atlasGlobal.devtools.states.add(initialState);
+    }
 
     const createHandler = (): ProxyHandler<object> => ({
         get(target, prop, receiver) {
@@ -73,6 +119,12 @@ export function createState<T extends object>(initialState: T): T {
 
             if (value !== null && typeof value === 'object') {
                 if (proxyCache.has(value)) return proxyCache.get(value)!;
+
+                const parentName = (target as any).__atlas_name || stateId;
+                if (!(value as any).__atlas_name) {
+                    (value as any).__atlas_name = `${parentName}.${String(prop)}`;
+                }
+
                 const childProxy = new Proxy(value, createHandler());
                 proxyCache.set(value, childProxy);
                 return childProxy;
@@ -80,11 +132,26 @@ export function createState<T extends object>(initialState: T): T {
             return value;
         },
         set(target, prop, value, receiver) {
-            if (Reflect.get(target, prop, receiver) === value) return true;
+            const oldValue = (target as any)[prop];
+            if (oldValue === value) return true;
 
             const success = Reflect.set(target, prop, value, receiver);
 
             if (success) {
+                if (atlasGlobal.devtools) {
+                    const stateName = (target as any).__atlas_name || stateId;
+                    atlasGlobal.devtools.logs.push({
+                        time: Date.now(),
+                        stateName: stateName,
+                        prop,
+                        oldValue,
+                        newValue: value
+                    });
+                    if (atlasGlobal.devtools.onUpdate) {
+                        atlasGlobal.devtools.onUpdate();
+                    }
+                }
+
                 const listeners = targetMap.get(target)?.get(prop);
                 if (listeners) {
                     listeners.forEach(fn => queueUpdate(fn));
@@ -94,7 +161,13 @@ export function createState<T extends object>(initialState: T): T {
         }
     });
 
-    return new Proxy(initialState, createHandler()) as T;
+    const proxy = new Proxy(initialState, createHandler()) as T;
+
+    if (atlasGlobal.devtools) {
+        atlasGlobal.devtools.states.add(proxy);
+    }
+
+    return proxy;
 }
 
 /**
@@ -164,7 +237,7 @@ export function createArchive<T extends object>(key: string, initialState: T): T
         logger.warn('Atlas', `Failed to parse localStorage key "${key}". Using initial state.`);
     }
 
-    const state = createState(data);
+    const state = createState(data, `archive:${key}`);
 
     createEffect(() => {
         try {
@@ -189,7 +262,7 @@ export function createArchive<T extends object>(key: string, initialState: T): T
  */
 export function createFlow<T extends object>(name: string, initialState: T): T {
     if (!registry.has(name)) {
-        registry.set(name, createState(initialState));
+        registry.set(name, createState(initialState, `flow:${name}`));
     }
     return registry.get(name) as T;
 }

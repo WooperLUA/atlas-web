@@ -21,7 +21,13 @@ export function createStyleMap(css: Record<string, AtlasCSS>): string {
 
         const scopedSelector = selector.trim()
             .split(',')
-            .map(s => `.${scopeId} ${s.trim()}`)
+            .map(s => {
+                s = s.trim();
+                if (s.startsWith('&')) {
+                    return s.replace('&', `.${scopeId}`);
+                }
+                return `.${scopeId} ${s}`;
+            })
             .join(', ');
 
         return `${scopedSelector} { ${rules} }`;

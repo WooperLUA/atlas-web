@@ -51,7 +51,6 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
     };
 
     execute();
-
     return {
         state,
         refresh: execute

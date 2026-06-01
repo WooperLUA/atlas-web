@@ -35,6 +35,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@atlas": ["src/atlas/index.ts"],
+      "@atlas-devtools": ["src/atlas-devtools/index.ts"],
       "@atlas-dom": ["src/atlas-dom/index.ts"],
       "@atlas-router": ["src/atlas-router/index.ts"],
       "@atlas-query": ["src/atlas-query/index.ts"],

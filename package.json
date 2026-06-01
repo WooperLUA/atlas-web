@@ -10,6 +10,10 @@
       "types": "./dist/atlas.d.ts",
       "import": "./dist/atlas.js"
     },
+    "./devtools": {
+      "types": "./dist/atlas-devtools.d.ts",
+      "import": "./dist/atlas-devtools.js"
+    },
     "./dom": {
       "types": "./dist/atlas-dom.d.ts",
       "import": "./dist/atlas-dom.js"
