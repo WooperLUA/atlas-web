@@ -1,5 +1,5 @@
 import {_If, Button, createStyleMap, Div} from "@atlas-dom";
-import {createState, getRefs} from "@atlas";
+import {uState, getRefs} from "@atlas";
 
 export const mountAtlasDevtools = () =>
 {
@@ -10,7 +10,7 @@ export const mountAtlasDevtools = () =>
         target.devtools = {logs: [], states: new Set(), onUpdate: null};
     }
 
-    const localState = createState({isVisible: false});
+    const localState = uState({isVisible: false});
     const {isVisible} = getRefs(localState);
 
     const style = createStyleMap({

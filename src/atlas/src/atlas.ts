@@ -2,7 +2,8 @@ import {logger} from "@services";
 
 export type Listener = () => void;
 
-interface DevtoolLog {
+interface DevtoolLog
+{
     time: number;
     stateName: string;
     prop: string | symbol;
@@ -10,18 +11,22 @@ interface DevtoolLog {
     newValue: any;
 }
 
-function getSourceLocation(): string {
-    try {
+function getSourceLocation(): string
+{
+    try
+    {
         const stack = new Error().stack;
         if (!stack) return 'Unknown';
         const lines = stack.split('\n');
 
         let targetIndex = 3;
-        for (let i = 2; i < lines.length; i++) {
-            if (!lines[i]?.includes('createState') &&
-                !lines[i]?.includes('createArchive') &&
-                !lines[i]?.includes('createFlow') &&
-                !lines[i]?.includes('getSourceLocation')) {
+        for (let i = 2; i < lines.length; i++)
+        {
+            if (!lines[i]?.includes('getSourceLocation') &&
+                !lines[i]?.includes('uState') &&
+                !lines[i]?.includes('uFlow') &&
+                !lines[i]?.includes('uArchive'))
+            {
                 targetIndex = i;
                 break;
             }
@@ -30,16 +35,18 @@ function getSourceLocation(): string {
         const callerLine = lines[targetIndex] || '';
         const match = callerLine.match(/([^\/\\]+\.[tj]sx?):(\d+):\d+/);
         return match ? `${match[1]}:${match[2]}` : 'Unknown';
-    } catch {
+    }
+    catch
+    {
         return 'Unknown';
     }
 }
 
 const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = {
-    activeListener: null,
-    listenerStack: [],
-    registerUnsubscribe: null,
-    devtools: null as {
+    activeListener:      null,
+    listenerStack:       [] as Listener[],
+    registerUnsubscribe: null as ((fn: () => void) => void) | null,
+    devtools:            null as {
         logs: DevtoolLog[];
         states: Set<object>;
         onUpdate: (() => void) | null;
@@ -49,11 +56,14 @@ const atlasGlobal = (window as any)._atlas || ((window as any)._atlas = {
 const pendingUpdates = new Set<Listener>();
 let isTicking = false;
 
-function queueUpdate(fn: Listener) {
+function queueUpdate(fn: Listener)
+{
     pendingUpdates.add(fn);
-    if (!isTicking) {
+    if (!isTicking)
+    {
         isTicking = true;
-        queueMicrotask(() => {
+        queueMicrotask(() =>
+        {
             const currentUpdates = Array.from(pendingUpdates);
             pendingUpdates.clear();
             isTicking = false;
@@ -67,49 +77,51 @@ const registry = new Map<string, object>();
 
 /**
  * Creates a fine-grained reactive state proxy.
- * Dependencies are tracked automatically when properties are accessed
- * inside reactive contexts (DOM traits, effects, formulas).
- *
- * @template T - Must be an object. Wrap arrays/primitives: `createState({ items: [] })`
- * @param initialState - The initial value of the reactive state.
- * @returns A Proxy that intercepts property access and mutations.
  */
-export function createState<T extends object>(initialState: T, fallbackName?: string): T {
+export function uState<T extends object>(initialState: T, fallbackName?: string): T
+{
     const proxyCache = new WeakMap<object, object>();
-
     const stateId = fallbackName || getSourceLocation();
 
-    if (!(initialState as any).__atlas_name) {
+    if (!(initialState as any).__atlas_name)
+    {
         (initialState as any).__atlas_name = stateId;
     }
 
-    if (atlasGlobal.devtools) {
+    if (atlasGlobal.devtools)
+    {
         atlasGlobal.devtools.states.add(initialState);
     }
 
     const createHandler = (): ProxyHandler<object> => ({
-        get(target, prop, receiver) {
+        get(target, prop, receiver)
+        {
             const currentListener = atlasGlobal.listenerStack.length > 0
                 ? atlasGlobal.listenerStack[atlasGlobal.listenerStack.length - 1]
                 : atlasGlobal.activeListener;
 
-            if (currentListener) {
+            if (currentListener)
+            {
                 let depsMap = targetMap.get(target);
-                if (!depsMap) {
+                if (!depsMap)
+                {
                     depsMap = new Map();
                     targetMap.set(target, depsMap);
                 }
 
                 let listeners = depsMap.get(prop);
-                if (!listeners) {
+                if (!listeners)
+                {
                     listeners = new Set();
                     depsMap.set(prop, listeners);
                 }
 
                 listeners.add(currentListener);
 
-                if (atlasGlobal.registerUnsubscribe) {
-                    atlasGlobal.registerUnsubscribe(() => {
+                if (atlasGlobal.registerUnsubscribe)
+                {
+                    atlasGlobal.registerUnsubscribe(() =>
+                    {
                         targetMap.get(target)?.get(prop)?.delete(currentListener);
                     });
                 }
@@ -117,11 +129,13 @@ export function createState<T extends object>(initialState: T, fallbackName?: st
 
             const value = Reflect.get(target, prop, receiver);
 
-            if (value !== null && typeof value === 'object') {
+            if (value !== null && typeof value === 'object')
+            {
                 if (proxyCache.has(value)) return proxyCache.get(value)!;
 
                 const parentName = (target as any).__atlas_name || stateId;
-                if (!(value as any).__atlas_name) {
+                if (!(value as any).__atlas_name)
+                {
                     (value as any).__atlas_name = `${parentName}.${String(prop)}`;
                 }
 
@@ -131,29 +145,34 @@ export function createState<T extends object>(initialState: T, fallbackName?: st
             }
             return value;
         },
-        set(target, prop, value, receiver) {
+        set(target, prop, value, receiver)
+        {
             const oldValue = (target as any)[prop];
             if (oldValue === value) return true;
 
             const success = Reflect.set(target, prop, value, receiver);
 
-            if (success) {
-                if (atlasGlobal.devtools) {
+            if (success)
+            {
+                if (atlasGlobal.devtools)
+                {
                     const stateName = (target as any).__atlas_name || stateId;
                     atlasGlobal.devtools.logs.push({
-                        time: Date.now(),
+                        time:      Date.now(),
                         stateName: stateName,
                         prop,
                         oldValue,
-                        newValue: value
+                        newValue:  value
                     });
-                    if (atlasGlobal.devtools.onUpdate) {
+                    if (atlasGlobal.devtools.onUpdate)
+                    {
                         atlasGlobal.devtools.onUpdate();
                     }
                 }
 
                 const listeners = targetMap.get(target)?.get(prop);
-                if (listeners) {
+                if (listeners)
+                {
                     listeners.forEach(fn => queueUpdate(fn));
                 }
             }
@@ -163,7 +182,8 @@ export function createState<T extends object>(initialState: T, fallbackName?: st
 
     const proxy = new Proxy(initialState, createHandler()) as T;
 
-    if (atlasGlobal.devtools) {
+    if (atlasGlobal.devtools)
+    {
         atlasGlobal.devtools.states.add(proxy);
     }
 
@@ -172,112 +192,219 @@ export function createState<T extends object>(initialState: T, fallbackName?: st
 
 /**
  * Extracts reactive getter functions from a state proxy for easy destructuring.
- *
- * @template T - Shape of the state object.
- * @param proxy - The reactive state proxy returned by `createState`.
- * @returns An object where each key maps to a `() => T[K]` reactive getter.
  */
-export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K] } {
+export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K] }
+{
     return new Proxy({} as any, {
-        get(_, prop: string | symbol) {
+        get(_, prop: string | symbol)
+        {
             return () => proxy[prop as keyof T];
         }
     });
 }
 
 /**
- * Executes a callback immediately and schedules it to re-run
- * when any accessed reactive state changes.
- *
- * @param effect - The side-effect function to execute.
+ * Executes a callback immediately and schedules it to re-run when dependencies change.
+ * @returns A dispose function to manually clean up the effect and its dependencies.
  */
-export function createEffect(effect: () => void): void {
-    const runEffect = () => {
-        atlasGlobal.listenerStack.push(runEffect);
-        try {
-            effect();
-        } finally {
-            atlasGlobal.listenerStack.pop();
+export function uEffect(effect: () => void, dependencies?: (() => any) | (() => any)[]): () => void
+{
+    let cleanupFns: (() => void)[] = [];
+
+    const runEffect = () =>
+    {
+        cleanupFns.forEach(fn => fn());
+        cleanupFns = [];
+
+        const prevUnsubscribe = atlasGlobal.registerUnsubscribe;
+        atlasGlobal.registerUnsubscribe = (fn: () => void) =>
+        {
+            cleanupFns.push(fn);
+        };
+
+        try
+        {
+            if (dependencies)
+            {
+                const depsArray = Array.isArray(dependencies) ? dependencies : [dependencies];
+                atlasGlobal.listenerStack.push(runEffect);
+                try
+                {
+                    depsArray.forEach(dep => dep());
+                }
+                finally
+                {
+                    atlasGlobal.listenerStack.pop();
+                }
+                effect();
+            }
+            else
+            {
+                atlasGlobal.listenerStack.push(runEffect);
+                try
+                {
+                    effect();
+                }
+                finally
+                {
+                    atlasGlobal.listenerStack.pop();
+                }
+            }
+        }
+        finally
+        {
+            atlasGlobal.registerUnsubscribe = prevUnsubscribe;
         }
     };
+
     runEffect();
+
+    return () =>
+    {
+        cleanupFns.forEach(fn => fn());
+        cleanupFns = [];
+    };
 }
 
 /**
- * Creates a derived value getter that recalculates only when
- * its tracked dependencies change.
- *
- * @template T - Return type of the calculation.
- * @param calculation - Function that computes the derived value.
- * @returns A reactive getter `() => T`.
+ * Creates a derived value getter that recalculates only when its tracked dependencies change.
  */
-export function createFormula<T>(calculation: () => T): () => T {
-    return () => calculation();
+export function uFormula<T>(calculation: () => T): () => T
+{
+    const memo = uState<{ value: T }>({ value: undefined as any });
+
+    uEffect(() =>
+    {
+        memo.value = calculation();
+    });
+
+    return () => memo.value;
 }
 
 /**
- * Creates a reactive state that automatically syncs with `localStorage`.
- * Acts as a singleton: calling this multiple times with the same key returns the same instance.
+ * Creates or retrieves a global reactive archive (synced to localStorage).
+ * Acts as a singleton: calling this with just the key retrieves the existing archive.
+ * Calling it with a state proxy creates it if it doesn't exist.
  *
  * @template T - Must be an object.
  * @param key - Unique `localStorage` key for persistence.
- * @param initialState - Fallback value if no stored data exists.
- * @returns A reactive state proxy synced to storage.
+ * @param state - (Optional) An existing reactive state proxy (from `uState` or `uFlow`). Required on the first call.
+ * @returns A shared reactive state proxy synced to storage.
  */
-export function createArchive<T extends object>(key: string, initialState: T): T {
-    if (registry.has(key)) {
-        return registry.get(key) as T;
+export function uArchive<T extends object>(key: string): T;
+export function uArchive<T extends object>(key: string, state: T): T;
+export function uArchive<T extends object>(key: string, state?: T): T
+{
+    const registryKey = `archive:${key}`;
+
+    if (registry.has(registryKey))
+    {
+        return registry.get(registryKey) as T;
     }
 
-    let data: T = initialState;
-    try {
+    if (state === undefined)
+    {
+        throw new Error(`Atlas: Archive "${key}" is not initialized. Provide a uState or uFlow on the first call.`);
+    }
+
+    // Hydrate from localStorage
+    try
+    {
         const saved = localStorage.getItem(key);
-        if (saved) data = JSON.parse(saved);
-    } catch (e) {
-        logger.warn('Atlas', `Failed to parse localStorage key "${key}". Using initial state.`);
+        if (saved)
+        {
+            const parsed = JSON.parse(saved);
+            Object.assign(state, parsed);
+        }
+    }
+    catch (e)
+    {
+        logger.warn('Atlas', `Failed to parse localStorage key "${key}". Using existing state.`);
     }
 
-    const state = createState(data, `archive:${key}`);
-
-    createEffect(() => {
-        try {
+    // Setup reactive sync to localStorage
+    uEffect(() =>
+    {
+        try
+        {
             localStorage.setItem(key, JSON.stringify(state));
-        } catch (e) {
+        }
+        catch (e)
+        {
             logger.error('Atlas', 'Failed to save state to localStorage', e);
         }
     });
 
-    registry.set(key, state);
+    registry.set(registryKey, state);
     return state;
 }
 
 /**
- * Creates a global reactive flow (non-persistent shared state).
- * Shares the same registry as createArchive for consistency.
+ * Creates or retrieves a global reactive flow (shared state).
+ * Acts as a singleton: calling this with just the name retrieves the existing flow.
+ * Calling it with an initialState creates it if it doesn't exist.
  *
  * @template T - Must be an object.
  * @param name - Unique name for this flow.
- * @param initialState - Initial value for the flow.
+ * @param initialState - (Optional) Initial value for the flow. Required on first call.
  * @returns A shared reactive state proxy.
  */
-export function createFlow<T extends object>(name: string, initialState: T): T {
-    if (!registry.has(name)) {
-        registry.set(name, createState(initialState, `flow:${name}`));
+export function uFlow<T extends object>(name: string): T;
+export function uFlow<T extends object>(name: string, initialState: T): T;
+export function uFlow<T extends object>(name: string, initialState?: T): T {
+    const registryKey = `flow:${name}`;
+
+    if (!registry.has(registryKey)) {
+        if (initialState === undefined) {
+            throw new Error(`Atlas: Flow "${name}" is not initialized. Provide initialState on the first call.`);
+        }
+        registry.set(registryKey, uState(initialState, registryKey));
     }
-    return registry.get(name) as T;
+    return registry.get(registryKey) as T;
+}
+
+// ============================================================================
+// DEPRECATED LEGACY ALIASES (For backward compatibility and migration)
+// ============================================================================
+
+/** @deprecated Use `uState` instead. */
+export function createState<T extends object>(initialState: T, fallbackName?: string): T
+{
+    logger.warn('Atlas', '`createState` is deprecated. Please use `uState` instead.');
+    return uState(initialState, fallbackName);
+}
+
+/** @deprecated Use `uEffect` instead. */
+export function createEffect(effect: () => void, dependencies?: (() => any) | (() => any)[]): () => void
+{
+    logger.warn('Atlas', '`createEffect` is deprecated. Please use `uEffect` instead.');
+    return uEffect(effect, dependencies);
+}
+
+/** @deprecated Use `uFormula` instead. */
+export function createFormula<T>(calculation: () => T): () => T
+{
+    logger.warn('Atlas', '`createFormula` is deprecated. Please use `uFormula` instead.');
+    return uFormula(calculation);
+}
+
+/** @deprecated Use `uFlow` instead. */
+export function createFlow<T extends object>(name: string): T;
+export function createFlow<T extends object>(name: string, initialState: T): T;
+export function createFlow<T extends object>(name: string, initialState?: T): T
+{
+    logger.warn('Atlas', '`createFlow` is deprecated. Please use `uFlow` instead.');
+    if (initialState === undefined)
+    {
+        return uFlow<T>(name);
+    }
+    return uFlow<T>(name, initialState);
 }
 
 /**
- * Retrieves an existing global state by name. Throws if not initialized.
- *
- * @template T - Shape of the state object.
- * @param name - Name of the flow to retrieve.
- * @returns The shared reactive state proxy.
+ * @deprecated Use `uArchive(key, initialState)` instead.
  */
-export function getFlow<T extends object>(name: string): T {
-    const ctx = registry.get(name);
-    if (!ctx) {
-        logger.error('Atlas', `Flow "${name}" not initialized.`);
-    }
-    return ctx as T;
+export function createArchive<T extends object>(key: string, initialState: T): T {
+    logger.warn('Atlas', '`createArchive` is deprecated. Please use `uArchive(key, initialState)` instead.');
+    return uArchive(key, initialState);
 }

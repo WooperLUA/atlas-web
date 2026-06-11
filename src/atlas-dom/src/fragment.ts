@@ -38,7 +38,7 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
     const isSvg = svgTags.includes(tag.toLowerCase());
 
     const element = isSvg
-        ? (document.createElementNS('http://www.w3.org/1999/svg', tag) as SVGElement)
+        ? (document.createElementNS('http://www.w3.org/2000/svg', tag) as SVGElement)
         : document.createElement(tag);
 
     (element as any)._atlas_cleanups = [];

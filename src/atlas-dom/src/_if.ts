@@ -1,5 +1,6 @@
 import {_Structure} from "@atlas-dom";
 import type {Children} from "@types";
+import {uEffect} from "@atlas";
 
 /**
  * Conditionally renders children based on a reactive boolean.
@@ -14,8 +15,11 @@ export function _If(when: () => boolean, ...children: (Children | (() => Childre
     const marker = document.createComment("atlas-if");
     fragment.appendChild(marker);
     let currentNodes: Node[] = [];
+    let dispose: (() => void) | undefined;
 
     const update = () => {
+        if (dispose) dispose();
+
         currentNodes.forEach(node => {
             if ((node as any)._atlas_cleanups) {
                 (node as any)._atlas_cleanups.forEach((cleanup: () => void) => cleanup());
@@ -23,25 +27,24 @@ export function _If(when: () => boolean, ...children: (Children | (() => Childre
             }
             node.parentNode?.removeChild(node);
         });
+        currentNodes = [];
 
         if (when()) {
-            const globalContext = (window as any)._atlas;
-
             const evaluatedChildren = children.map(child =>
                 typeof child === 'function' ? child() : child
             );
-
             const nextContent = _Structure(...evaluatedChildren);
             currentNodes = Array.from(nextContent.childNodes);
             marker.parentNode?.insertBefore(nextContent, marker);
-        } else {
-            currentNodes = [];
         }
     };
 
-    const globalContext = (window as any)._atlas;
-    globalContext.listenerStack.push(update);
-    try { update(); } finally { globalContext.listenerStack.pop(); }
+    dispose = uEffect(update);
+
+    (marker as any)._atlas_cleanups = (marker as any)._atlas_cleanups || [];
+    (marker as any)._atlas_cleanups.push(() => {
+        if (dispose) dispose();
+    });
 
     return fragment;
 }

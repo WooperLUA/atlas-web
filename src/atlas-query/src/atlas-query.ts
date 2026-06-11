@@ -1,4 +1,4 @@
-import {createState} from '@atlas';
+import {uState} from '@atlas';
 import {logger} from "@services";
 
 /**
@@ -10,9 +10,9 @@ import {logger} from "@services";
  * @param options - Standard fetch init options (ignored if request is a function).
  * @returns `{ state: ReactiveFetchState<T>, refresh: () => Promise<void> }`
  */
-export function createFetch<T>(request: RequestInfo | (() => Promise<T>), options: RequestInit = {})
+export function uFetch<T>(request: RequestInfo | (() => Promise<T>), options: RequestInit = {})
 {
-    const state = createState({
+    const state = uState({
         data:    null as T | null,
         error:   null as any | null,
         loading: true,
@@ -57,6 +57,7 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
     };
 }
 
+
 /**
  * Reactive wrapper for manual async mutations (POST/PUT/DELETE).
  * Does not execute automatically. Trigger via `execute()`.
@@ -66,9 +67,9 @@ export function createFetch<T>(request: RequestInfo | (() => Promise<T>), option
  * @param mutationFn - Async function accepting variables and returning Promise<T>.
  * @returns `{ state: ReactiveMutationState<T>, execute: (vars: V) => Promise<void> }`
  */
-export function createMutation<T, V = void>(mutationFn: (variables: V) => Promise<T>)
+export function uMutation<T, V = void>(mutationFn: (variables: V) => Promise<T>)
 {
-    const state = createState({
+    const state = uState({
         data:    null as T | null,
         error:   null as any | null,
         loading: false,
@@ -100,3 +101,18 @@ export function createMutation<T, V = void>(mutationFn: (variables: V) => Promis
         execute
     };
 }
+
+// ============================================================================
+// DEPRECATED LEGACY ALIASES (For backward compatibility and migration)
+// ============================================================================
+
+/**
+ * @deprecated Use `uFetch` instead. This alias will be removed in a future major release.
+ */
+export const createFetch = uFetch;
+
+
+/**
+ * @deprecated Use `uMutation` instead. This alias will be removed in a future major release.
+ */
+export const createMutation = uMutation;

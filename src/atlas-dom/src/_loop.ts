@@ -1,4 +1,5 @@
 import { _Structure } from "@/atlas-dom";
+import {uEffect} from "@atlas";
 
 /**
  * Renders a list of items reactively.
@@ -23,22 +24,29 @@ export function _Loop<T>(
     let currentNodes: Node[] = [];
     const keyMap = new Map<string | number, Node>();
     const useKeys = !!getKey;
+    let dispose: (() => void) | undefined;
 
     const update = () => {
+        if (dispose) dispose();
         const newItems = dataSource();
         const parent = marker.parentNode;
         if (!parent) return;
 
-        if (useKeys && getKey) {
+        currentNodes.forEach(node => {
+            if ((node as any)._atlas_cleanups) {
+                (node as any)._atlas_cleanups.forEach((cleanup: () => void) => cleanup());
+                (node as any)._atlas_cleanups = [];
+            }
+            if (!useKeys || !keyMap.has(getKey!(currentItems[currentNodes.indexOf(node)] as T))) {
+                node.parentNode?.removeChild(node);
+            }
+        });
 
+        if (useKeys && getKey) {
             const newKeys = new Set<string | number>();
-            const itemsAndKeys = newItems.map((item) => ({
-                item,
-                key: getKey(item),
-            }));
+            const itemsAndKeys = newItems.map((item) => ({ item, key: getKey(item) }));
 
             itemsAndKeys.forEach(({ key }) => newKeys.add(key));
-
 
             keyMap.forEach((node, key) => {
                 if (!newKeys.has(key)) {
@@ -48,6 +56,7 @@ export function _Loop<T>(
             });
 
             currentNodes = [];
+            currentItems = [];
 
             itemsAndKeys.forEach(({ item, key }) => {
                 let node = keyMap.get(key);
@@ -60,6 +69,7 @@ export function _Loop<T>(
                 }
                 parent.appendChild(node);
                 currentNodes.push(node);
+                currentItems.push(item);
             });
         } else {
             for (let i = newItems.length; i < currentItems.length; i++) {
@@ -89,9 +99,14 @@ export function _Loop<T>(
         }
     };
 
-    const globalContext = (window as any)._atlas;
-    globalContext.listenerStack.push(update);
-    try { update(); } finally { globalContext.listenerStack.pop(); }
+    dispose = uEffect(update);
+
+    (marker as any)._atlas_cleanups = (marker as any)._atlas_cleanups || [];
+    (marker as any)._atlas_cleanups.push(() => {
+        if (dispose) dispose();
+        keyMap.forEach(node => node.parentNode?.removeChild(node));
+        keyMap.clear();
+    });
 
     return fragment;
 }
