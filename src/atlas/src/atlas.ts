@@ -267,11 +267,77 @@ export function uEffect(effect: () => void, dependencies?: (() => any) | (() => 
 }
 
 /**
+ * Creates a debounced side-effect.
+ * Tracks dependencies like normal uEffect, but delays execution
+ * until the dependencies have stopped changing for the specified delay.
+ *
+ * @param effect - The side-effect to execute (e.g., an API call).
+ * @param delay - The time in milliseconds to wait after the last change.
+ * @returns A dispose function to clean up the effect.
+ */
+export function uDebounceEffect(effect: () => void, delay: number): () => void
+{
+    let timeout: ReturnType<typeof setTimeout>;
+
+    return uEffect(() =>
+    {
+        clearTimeout(timeout);
+
+        timeout = setTimeout(() =>
+        {
+            effect();
+        }, delay);
+    });
+}
+
+/**
+ * Runs an effect exactly once. After the first successful execution,
+ * it automatically cleans up its dependencies and will not run again.
+ *
+ * @param effect - The side-effect to execute a single time.
+ */
+export function uOnceEffect(effect: () => void): void
+{
+    let dispose: (() => void) | undefined;
+
+    const runner = () =>
+    {
+        effect();
+        if (dispose) dispose();
+    };
+
+    dispose = uEffect(runner);
+}
+
+/**
+ * Watches a specific reactive getter and triggers a callback only when its value changes.
+ * Provides both the new and old values to the callback.
+ *
+ * @param getter - A function that returns the value to watch (e.g., () => state.count).
+ * @param callback - Function to run when the value changes (newValue, oldValue).
+ * @returns A dispose function to stop watching.
+ */
+export function uWatchEffect<T>(getter: () => T, callback: (newValue: T, oldValue: T) => void): () => void
+{
+    let oldValue = getter();
+
+    return uEffect(() =>
+    {
+        const newValue = getter();
+        if (newValue !== oldValue)
+        {
+            callback(newValue, oldValue);
+            oldValue = newValue;
+        }
+    });
+}
+
+/**
  * Creates a derived value getter that recalculates only when its tracked dependencies change.
  */
 export function uFormula<T>(calculation: () => T): () => T
 {
-    const memo = uState<{ value: T }>({ value: undefined as any });
+    const memo = uState<{ value: T }>({value: undefined as any});
 
     uEffect(() =>
     {
@@ -351,11 +417,14 @@ export function uArchive<T extends object>(key: string, state?: T): T
  */
 export function uFlow<T extends object>(name: string): T;
 export function uFlow<T extends object>(name: string, initialState: T): T;
-export function uFlow<T extends object>(name: string, initialState?: T): T {
+export function uFlow<T extends object>(name: string, initialState?: T): T
+{
     const registryKey = `flow:${name}`;
 
-    if (!registry.has(registryKey)) {
-        if (initialState === undefined) {
+    if (!registry.has(registryKey))
+    {
+        if (initialState === undefined)
+        {
             throw new Error(`Atlas: Flow "${name}" is not initialized. Provide initialState on the first call.`);
         }
         registry.set(registryKey, uState(initialState, registryKey));
@@ -404,7 +473,8 @@ export function createFlow<T extends object>(name: string, initialState?: T): T
 /**
  * @deprecated Use `uArchive(key, initialState)` instead.
  */
-export function createArchive<T extends object>(key: string, initialState: T): T {
+export function createArchive<T extends object>(key: string, initialState: T): T
+{
     logger.warn('Atlas', '`createArchive` is deprecated. Please use `uArchive(key, initialState)` instead.');
     return uArchive(key, initialState);
 }
