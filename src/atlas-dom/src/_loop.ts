@@ -26,10 +26,8 @@ export function _Loop<T>(
     const keyMap = new Map<string | number, Node>();
     const useKeys = !!getKey;
     let dispose: (() => void) | undefined;
-
     const update = () =>
     {
-        if (dispose) dispose();
 
         const newItems = dataSource();
         const parent = marker.parentNode;

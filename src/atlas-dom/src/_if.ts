@@ -19,7 +19,6 @@ export function _If(when: () => boolean, ...children: (Children | (() => Childre
     let dispose: (() => void) | undefined;
 
     const update = () => {
-        if (dispose) dispose();
 
         currentNodes.forEach(node => {
             if ((node as any)._atlas_cleanups) {

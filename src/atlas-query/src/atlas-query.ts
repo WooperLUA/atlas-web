@@ -19,6 +19,8 @@ export function uFetch<T>(request: RequestInfo | (() => Promise<T>), options: Re
         status:  0
     });
 
+    (state as any).__atlas_type = 'query';
+
     const execute = async () =>
     {
         state.loading = true;
@@ -75,6 +77,8 @@ export function uMutation<T, V = void>(mutationFn: (variables: V) => Promise<T>)
         loading: false,
         status:  0
     });
+
+    (state as any).__atlas_type = 'query';
 
     const execute = async (variables: V) =>
     {

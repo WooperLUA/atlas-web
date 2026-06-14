@@ -9,6 +9,7 @@ interface DevtoolLog
     prop: string | symbol;
     oldValue: any;
     newValue: any;
+    logType?: 'state' | 'query';
 }
 
 function getSourceLocation(): string
@@ -131,6 +132,16 @@ export function uState<T extends object>(initialState: T, fallbackName?: string)
 
             if (value !== null && typeof value === 'object')
             {
+                if (value instanceof Set ||
+                    value instanceof Map ||
+                    value instanceof WeakMap ||
+                    value instanceof WeakSet ||
+                    value instanceof Date ||
+                    value instanceof RegExp)
+                {
+                    return value;
+                }
+
                 if (proxyCache.has(value)) return proxyCache.get(value)!;
 
                 const parentName = (target as any).__atlas_name || stateId;
@@ -157,12 +168,15 @@ export function uState<T extends object>(initialState: T, fallbackName?: string)
                 if (atlasGlobal.devtools)
                 {
                     const stateName = (target as any).__atlas_name || stateId;
+                    const logType = (target as any).__atlas_type || 'state';
+
                     atlasGlobal.devtools.logs.push({
                         time:      Date.now(),
                         stateName: stateName,
                         prop,
                         oldValue,
-                        newValue:  value
+                        newValue:  value,
+                        logType
                     });
                     if (atlasGlobal.devtools.onUpdate)
                     {
@@ -268,26 +282,30 @@ export function uEffect(effect: () => void, dependencies?: (() => any) | (() => 
 
 /**
  * Creates a debounced side-effect.
- * Tracks dependencies like normal uEffect, but delays execution
- * until the dependencies have stopped changing for the specified delay.
+ * Tracks dependencies synchronously, but delays execution until
+ * the dependencies have stopped changing for the specified delay.
  *
  * @param effect - The side-effect to execute (e.g., an API call).
  * @param delay - The time in milliseconds to wait after the last change.
+ * @param dependencies - (Optional) Reactive getters to track synchronously.
  * @returns A dispose function to clean up the effect.
  */
-export function uDebounceEffect(effect: () => void, delay: number): () => void
+export function uDebounceEffect(
+    effect: () => void,
+    delay: number,
+    dependencies?: (() => any) | (() => any)[]
+): () => void
 {
     let timeout: ReturnType<typeof setTimeout>;
 
     return uEffect(() =>
     {
         clearTimeout(timeout);
-
         timeout = setTimeout(() =>
         {
             effect();
         }, delay);
-    });
+    }, dependencies);
 }
 
 /**
