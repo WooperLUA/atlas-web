@@ -307,46 +307,87 @@ export function uEffect(
  * Tracks dependencies synchronously, but delays execution until
  * the dependencies have stopped changing for the specified delay.
  *
- * @param effect - The side-effect to execute (e.g., an API call).
+ * @param effect - The side-effect to execute. Can return a cleanup function.
  * @param delay - The time in milliseconds to wait after the last change.
  * @param dependencies - (Optional) Reactive getters to track synchronously.
  * @returns A dispose function to clean up the effect.
  */
 export function uDebounceEffect(
-    effect: () => void,
+    effect: () => void | (() => void),
     delay: number,
     dependencies?: (() => any) | (() => any)[]
 ): () => void
 {
     let timeout: ReturnType<typeof setTimeout>;
+    let savedCleanup: (() => void) | undefined;
 
     return uEffect(() =>
     {
         clearTimeout(timeout);
+
+        if (savedCleanup)
+        {
+            savedCleanup();
+            savedCleanup = undefined;
+        }
+
         timeout = setTimeout(() =>
         {
-            effect();
+            const result = effect();
+            if (typeof result === 'function')
+            {
+                savedCleanup = result;
+            }
         }, delay);
+
+
+        return () =>
+        {
+            clearTimeout(timeout);
+            if (savedCleanup)
+            {
+                savedCleanup();
+                savedCleanup = undefined;
+            }
+        };
     }, dependencies);
 }
 
 /**
  * Runs an effect exactly once. After the first successful execution,
- * it automatically cleans up its dependencies and will not run again.
+ * it stops tracking dependencies. If it returns a cleanup function,
+ * that cleanup is registered with the parent reactive scope (e.g., component unmount).
  *
- * @param effect - The side-effect to execute a single time.
+ * @param effect - The side-effect to execute a single time. Can return a cleanup function.
  */
-export function uOnceEffect(effect: () => void): void
+export function uOnceEffect(effect: () => void | (() => void)): void
 {
-    let dispose: (() => void) | undefined;
+    let hasRun = false;
 
     const runner = () =>
     {
-        effect();
-        if (dispose) dispose();
+        if (hasRun) return;
+        hasRun = true;
+
+        const result = effect();
+        if (typeof result === 'function')
+        {
+            if (atlasGlobal.registerUnsubscribe)
+            {
+                atlasGlobal.registerUnsubscribe(result);
+            }
+        }
     };
 
-    dispose = uEffect(runner);
+    atlasGlobal.listenerStack.push(runner);
+    try
+    {
+        runner();
+    }
+    finally
+    {
+        atlasGlobal.listenerStack.pop();
+    }
 }
 
 /**
