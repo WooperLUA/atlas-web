@@ -219,29 +219,32 @@ export function getRefs<T extends object>(proxy: T): { [K in keyof T]: () => T[K
 
 /**
  * Executes a callback immediately and schedules it to re-run when dependencies change.
- * @returns A dispose function to manually clean up the effect and its dependencies.
+ * If the effect function returns a function, it is treated as a cleanup function
+ * that runs before the next execution or when disposed.
+ * @returns A dispose function to manually clean up the effect.
  */
-export function uEffect(effect: () => void, dependencies?: (() => any) | (() => any)[]): () => void
+export function uEffect(
+    effect: () => void | (() => void),
+    dependencies?: (() => any) | (() => any)[]
+): () => void
 {
-    let cleanupFns: (() => void)[] = [];
+    let cleanup: (() => void) | undefined;
 
-    const runEffect = () =>
+    const run = () =>
     {
-        cleanupFns.forEach(fn => fn());
-        cleanupFns = [];
 
-        const prevUnsubscribe = atlasGlobal.registerUnsubscribe;
-        atlasGlobal.registerUnsubscribe = (fn: () => void) =>
-        {
-            cleanupFns.push(fn);
-        };
+        if (cleanup) cleanup();
+
+        const internalCleanups: (() => void)[] = [];
+        const prevRegistry = atlasGlobal.registerUnsubscribe;
+        atlasGlobal.registerUnsubscribe = (fn: () => void) => internalCleanups.push(fn);
 
         try
         {
             if (dependencies)
             {
                 const depsArray = Array.isArray(dependencies) ? dependencies : [dependencies];
-                atlasGlobal.listenerStack.push(runEffect);
+                atlasGlobal.listenerStack.push(run);
                 try
                 {
                     depsArray.forEach(dep => dep());
@@ -250,14 +253,18 @@ export function uEffect(effect: () => void, dependencies?: (() => any) | (() => 
                 {
                     atlasGlobal.listenerStack.pop();
                 }
-                effect();
+
+                const result = effect();
+                if (typeof result === 'function') cleanup = result;
             }
             else
             {
-                atlasGlobal.listenerStack.push(runEffect);
+
+                atlasGlobal.listenerStack.push(run);
                 try
                 {
-                    effect();
+                    const result = effect();
+                    if (typeof result === 'function') cleanup = result;
                 }
                 finally
                 {
@@ -267,16 +274,31 @@ export function uEffect(effect: () => void, dependencies?: (() => any) | (() => 
         }
         finally
         {
-            atlasGlobal.registerUnsubscribe = prevUnsubscribe;
+
+            atlasGlobal.registerUnsubscribe = prevRegistry;
+
+
+            if (internalCleanups.length > 0)
+            {
+                const returnedCleanup = cleanup;
+                cleanup = () =>
+                {
+                    internalCleanups.forEach(fn => fn());
+                    if (returnedCleanup) returnedCleanup();
+                };
+            }
         }
     };
 
-    runEffect();
+    run();
 
     return () =>
     {
-        cleanupFns.forEach(fn => fn());
-        cleanupFns = [];
+        if (cleanup)
+        {
+            cleanup();
+            cleanup = undefined;
+        }
     };
 }
 

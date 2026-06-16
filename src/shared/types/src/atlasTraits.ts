@@ -6,12 +6,12 @@ import type {AtlasCSS} from "@shared/types";
 export type Reactive<T> = T | (() => T);
 
 /**
- * Defines the attributes and event listeners for an HTML element.
+ * Defines the attributes and event listeners for an AtlasNode.
  * Supports reactive bindings for standard properties.
  *
  * @template T - The HTML tag name.
  */
-export type Traits<T extends keyof HTMLElementTagNameMap> =
+export type AtlasTraits<T extends keyof HTMLElementTagNameMap> =
     {
         [P in keyof Omit<HTMLElementTagNameMap[T], 'style'>]?: HTMLElementTagNameMap[T][P] extends string
         ? Reactive<string | number>
@@ -20,11 +20,6 @@ export type Traits<T extends keyof HTMLElementTagNameMap> =
 {
 
     style?: Reactive<AtlasCSS | string>;
-
-    /* Event listener. */
-    onClick?: (e: MouseEvent) => void;
-    onInput?: (e: InputEvent) => void;
-    onChange?: (e: Event) => void;
 
     /* Lifecycle */
     onMount?: (el: HTMLElementTagNameMap[T]) => void;

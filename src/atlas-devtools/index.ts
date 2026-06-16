@@ -145,7 +145,7 @@ export const mountAtlasDevtools = () =>
 
             const header = Div({
                     className: 'state-header',
-                    onClick:   () =>
+                    onclick:   () =>
                                {
                                    const newSet = new Set(expandedStates());
                                    if (isExpanded) newSet.delete(name);
@@ -239,17 +239,17 @@ export const mountAtlasDevtools = () =>
         Button({
             className:   () => `tab-btn ${activeTab() === 'states' ? 'active' : ''}`,
             textContent: 'States (Atlas)',
-            onClick:     () => localState.activeTab = 'states'
+            onclick:     () => localState.activeTab = 'states'
         }),
         Button({
             className:   () => `tab-btn ${activeTab() === 'queries' ? 'active' : ''}`,
             textContent: 'Network (Query)',
-            onClick:     () => localState.activeTab = 'queries'
+            onclick:     () => localState.activeTab = 'queries'
         }),
         Button({
             className:   'tab-btn',
             textContent: 'Clear All',
-            onClick:     () =>
+            onclick:     () =>
                          {
                              target.devtools.logs = [];
                              updateUI();
@@ -272,7 +272,7 @@ export const mountAtlasDevtools = () =>
                             borderRadius:   '4px'
                         },
                         textContent: () => isVisible() ? '▼' : '🌍',
-                        onClick:     () => localState.isVisible = !localState.isVisible
+                        onclick:     () => localState.isVisible = !localState.isVisible
                     }),
                     _If(() => isVisible(),
                         Span({

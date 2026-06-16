@@ -1,4 +1,4 @@
-import type {Traits, Children, AtlasNode} from "@types";
+import type {AtlasTraits, Children, AtlasNode} from "@types";
 import {logger} from "@services";
 
 function applyStyle(element: HTMLElement, style: any)
@@ -150,7 +150,7 @@ type AtlasTags = {
      * @returns An AtlasNode seamlessly integrated into the reactivity graph.
      */
     [K in typeof tags[number] as Capitalize<K>]: (
-        traits?: Traits<K extends keyof HTMLElementTagNameMap ? K : 'div'>,
+        traits?: AtlasTraits<K extends keyof HTMLElementTagNameMap ? K : 'div'>,
         ...children: Children[]
     ) => AtlasNode<any>;
 };
