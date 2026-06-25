@@ -55,7 +55,19 @@ export function Fragment(tag: string, traits: any = {}, ...children: Children[])
         {
             const update = () =>
             {
-                const freshValue = value();
+                let freshValue = value();
+
+                // prevent undefined from rendering as literal text
+                if (freshValue === undefined)
+                {
+                    freshValue = null;
+                }
+
+                if (key === 'className' && freshValue === null)
+                {
+                    freshValue = '';
+                }
+
                 if (key === 'style')
                 {
                     applyStyle(element as HTMLElement, freshValue);

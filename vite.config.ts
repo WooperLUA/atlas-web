@@ -11,6 +11,7 @@ export default defineConfig({
                 'atlas-dom': path.resolve(__dirname, 'src/atlas-dom/index.ts'),
                 'atlas-router': path.resolve(__dirname, 'src/atlas-router/index.ts'),
                 "atlas-query": path.resolve(__dirname, "./src/atlas-query/index.ts"),
+                "atlas-form": path.resolve(__dirname, "./src/atlas-form/index.ts"),
                 'atlas-types': path.resolve(__dirname, 'src/shared/types/index.ts'),
             },
             formats: ['es']
@@ -32,6 +33,7 @@ export default defineConfig({
             "@atlas-dom": path.resolve(__dirname, "./src/atlas-dom/index.ts"),
             "@atlas-router": path.resolve(__dirname, "./src/atlas-router/index.ts"),
             "@atlas-query": path.resolve(__dirname, "./src/atlas-query/index.ts"),
+            "@atlas-form": path.resolve(__dirname, "./src/atlas-form/index.ts"),
             "@shared": path.resolve(__dirname, "./src/shared"),
             "@interfaces": path.resolve(__dirname, "./src/shared/interfaces/index.ts"),
             "@services": path.resolve(__dirname, "./src/shared/services/index.ts"),

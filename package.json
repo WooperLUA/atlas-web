@@ -26,6 +26,10 @@
       "types": "./dist/atlas-query.js",
       "import": "./dist/atlas-query.js"
     },
+    "./form": {
+      "types": "./dist/atlas-form.js",
+      "import": "./dist/atlas-form.js"
+    },
     "./types": {
       "types": "./dist/atlas-types.d.ts"
     }

@@ -39,6 +39,7 @@
       "@atlas-dom": ["src/atlas-dom/index.ts"],
       "@atlas-router": ["src/atlas-router/index.ts"],
       "@atlas-query": ["src/atlas-query/index.ts"],
+      "@atlas-form": ["src/atlas-form/index.ts"],
       "@shared/*": ["src/shared/*"],
       "@interfaces": ["src/shared/interfaces/index.ts"],
       "@services": ["src/shared/services/index.ts"],

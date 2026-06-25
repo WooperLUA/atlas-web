@@ -3,7 +3,7 @@ import type {AtlasCSS} from "@shared/types";
 /**
  * Represents a value that can be either static or a reactive function.
  */
-export type Reactive<T> = T | (() => T);
+export type Reactive<T> = T | (() => T | null | undefined);
 
 /**
  * Defines the attributes and event listeners for an AtlasNode.
